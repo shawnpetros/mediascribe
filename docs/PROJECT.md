@@ -7,9 +7,9 @@
 
 ## Current Status
 
-**Phase:** 1 — Core Library + CLI (MVP) — **CORE COMPLETE + TESTED**
+**Phase:** 2 — TUI + Profiles — **CORE TUI COMPLETE**
 **Last Session:** 2026-02-15
-**Last Agent/Session Notes:** All open questions resolved. Overlap-based chunking implemented. Comprehensive test suite added for core logic modules.
+**Last Agent/Session Notes:** Full TUI implementation with 6 screens, profile system, widgets, and CLI wiring. 152 tests passing, lint clean.
 
 ---
 
@@ -87,6 +87,33 @@
 12. test: comprehensive test suite for core logic modules
 13. docs: resolve open questions, update SPEC.md + PROJECT.md
 
+### Session 4 — 2026-02-15 (continued)
+**Focus:** Phase 2 — TUI application + profile system
+**Completed:**
+- Built full Textual TUI with 6-screen flow: Welcome → Setup → Picker → Profile → Pipeline → Results
+- Created profile system with 4 built-in profiles (anime_subtitles, podcast, meeting, lecture)
+  - TOML-based custom profile loading from ~/.config/mediascribe/profiles/
+  - Profile.apply() overlays settings on base MediascribeSettings
+- TUI screens:
+  - welcome.py — Dependency check (ffmpeg, API key), branding, version display
+  - setup.py — API key entry with async validation, saves to XDG config dir
+  - picker.py — File/folder browser using textual-fspicker, multi-file selection
+  - profile.py — Profile dropdown, language selectors, transcription/translation config, hardware info
+  - pipeline.py — Worker-thread pipeline execution with live progress per step per file
+  - results.py — Output file list with content preview, process-more/quit actions
+- TUI widgets:
+  - progress_bar.py — StepProgress (per-step) and JobProgress (per-file) with reactive status
+  - log_panel.py — RichLog-based scrolling log with step/success/error/warning formatting
+- Wired CLI `tui` command to launch Textual app (graceful ImportError for missing deps)
+- Added test suites: test_profiles.py (13 tests), test_tui_imports.py (11 tests)
+- All 152 tests passing, ruff lint clean
+
+**Commits:**
+14. feat: profile system — built-in presets and custom TOML profiles
+15. feat: TUI application — 6 screens, widgets, full pipeline integration
+16. test: profile and TUI import test suites
+17. docs: update PROJECT.md for Phase 2 completion
+
 ---
 
 ## Phase 1 — Core Library + CLI (MVP)
@@ -147,23 +174,23 @@
 ## Phase 2 — TUI + Profiles
 
 ### 2.1 TUI Application
-- [ ] tui/app.py — Textual app shell with screen navigation
-- [ ] tui/screens/welcome.py — Welcome + dependency check
-- [ ] tui/screens/setup.py — API key onboarding
-- [ ] tui/screens/picker.py — File/folder picker
-- [ ] tui/screens/profile.py — Profile selection + config
-- [ ] tui/screens/pipeline.py — Live execution progress
-- [ ] tui/screens/results.py — Output review
+- [x] tui/app.py — Textual app shell with screen navigation
+- [x] tui/screens/welcome.py — Welcome + dependency check
+- [x] tui/screens/setup.py — API key onboarding
+- [x] tui/screens/picker.py — File/folder picker
+- [x] tui/screens/profile.py — Profile selection + config
+- [x] tui/screens/pipeline.py — Live execution progress
+- [x] tui/screens/results.py — Output review
 
 ### 2.2 Profile System
-- [ ] Profile TOML schema
-- [ ] Built-in profiles: anime_subtitles, podcast, meeting, lecture
-- [ ] Custom profile creation
-- [ ] Profile-to-pipeline config mapping
+- [x] Profile TOML schema
+- [x] Built-in profiles: anime_subtitles, podcast, meeting, lecture
+- [x] Custom profile creation (TOML loading from XDG dir)
+- [x] Profile-to-pipeline config mapping
 
 ### 2.3 Smart Features
 - [ ] Custom prompt builder (user intent -> system prompt)
-- [ ] Hardware detection + concurrency recommendation
+- [x] Hardware detection + concurrency recommendation (shown in profile screen)
 - [ ] Processing time estimation
 - [ ] Large batch warnings
 
@@ -208,6 +235,9 @@
 | 2026-02-15 | pyannote.audio 3.x | Best-in-class diarization, decoupled from transcription |
 | 2026-02-15 | No streaming v1 | Different architecture, niche demand, quality tradeoff |
 | 2026-02-15 | Overlap chunking (15s) | Eliminates mid-sentence cuts at chunk boundaries |
+| 2026-02-15 | Screen-based TUI flow | Natural wizard pattern: Welcome→Setup→Pick→Config→Run→Results |
+| 2026-02-15 | Worker thread for pipeline | Textual main thread stays responsive; EventBus bridges to UI |
+| 2026-02-15 | Profile as dataclass + dict | Simple overlay on MediascribeSettings, easy TOML serialization |
 
 ---
 
@@ -232,6 +262,17 @@ When picking up this project in a new session:
 2. Read SPEC.md for architecture and feature details
 3. Check the current phase and find the next unchecked task
 4. Reference ../pipeline.py for the original proven patterns
-5. Run tests: cd mediascribe && pip install -e ".[dev]" && pytest
-6. Update this file after completing work
-7. Commit after each feature: git add -A && git commit -m "feat: ..."
+5. Run tests: cd mediascribe && pip install -e ".[tui,dev]" && pytest
+6. Launch TUI: mediascribe tui (requires [tui] extras)
+7. Update this file after completing work
+8. Commit after each feature: git add -A && git commit -m "feat: ..."
+
+### Next Up (Phase 2 remaining)
+- Custom prompt builder (user describes intent → AI generates translation prompt)
+- Processing time estimation on profile screen
+- Large batch warnings before pipeline execution
+
+### Next Up (Phase 3)
+- Speaker diarization (pyannote.audio 3.x integration)
+- Analyze step (summarize, topics, action items)
+- Checkpoint-based resume on interrupt
