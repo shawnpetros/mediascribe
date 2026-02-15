@@ -19,7 +19,10 @@ class Pipeline:
         pipeline.add_step(TranslateStep())
 
         for job in jobs:
-            await pipeline.run(job)
+            pipeline.run(job)
+
+    Steps are executed synchronously. For TUI use, call pipeline.run()
+    from a background thread; the EventBus bridges to the UI thread.
     """
 
     def __init__(self, settings: MediascribeSettings, events: EventBus) -> None:
@@ -31,7 +34,7 @@ class Pipeline:
         """Register a step to the pipeline."""
         self._steps.append(step)
 
-    async def run(self, job: Job) -> Job:
+    def run(self, job: Job) -> Job:
         """Execute all steps on a single job."""
         job.status = JobStatus.RUNNING
         self.events.emit(PipelineEvent(
@@ -41,14 +44,7 @@ class Pipeline:
         ))
 
         for step in self._steps:
-            if not step.required and step.can_skip(job):
-                self.events.emit(PipelineEvent(
-                    type=EventType.STEP_SKIPPED,
-                    step_name=step.name,
-                    message=f"Skipping {step.name} — output exists",
-                ))
-                continue
-
+            # Check idempotency — skip if output already exists
             if step.can_skip(job):
                 self.events.emit(PipelineEvent(
                     type=EventType.STEP_SKIPPED,
@@ -65,7 +61,7 @@ class Pipeline:
             ))
 
             try:
-                result = await step.execute(job, self.settings, self.events)
+                result = step.execute(job, self.settings, self.events)
                 self.events.emit(PipelineEvent(
                     type=EventType.STEP_COMPLETE,
                     step_name=step.name,

@@ -29,6 +29,9 @@ class PipelineStep(ABC):
     - Executes work and returns a StepResult
     - Emits progress events via the EventBus
     - Can optionally estimate its duration
+
+    Steps are synchronous. For TUI use, the pipeline orchestrator
+    runs in a background thread while the event bus bridges to the UI.
     """
 
     name: str
@@ -36,7 +39,7 @@ class PipelineStep(ABC):
     required: bool = True  # If False, step can be configured off
 
     @abstractmethod
-    async def execute(
+    def execute(
         self,
         job: Job,
         settings: MediascribeSettings,

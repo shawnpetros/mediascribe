@@ -1,56 +1,39 @@
-"""FFmpeg/ffprobe wrapper functions."""
+"""FFmpeg/ffprobe wrapper functions.
+
+All functions are synchronous. For TUI use, the pipeline runs in a
+background thread so these blocking calls don't freeze the UI.
+"""
 
 from __future__ import annotations
 
-import asyncio
 import json
+import subprocess
 from pathlib import Path
 
-from mediascribe.core.job import MediaInfo, MediaType
+
+def probe_duration(path: Path) -> float:
+    """Get audio/video duration in seconds via ffprobe."""
+    r = subprocess.run(
+        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+         "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True,
+    )
+    return float(r.stdout.strip())
 
 
-async def probe_file(path: Path) -> MediaInfo:
-    """Run ffprobe on a file and return structured MediaInfo."""
+def probe_json(path: Path) -> dict:
+    """Get full ffprobe JSON output for a file."""
     cmd = [
         "ffprobe", "-v", "quiet",
         "-print_format", "json",
         "-show_format", "-show_streams",
         str(path),
     ]
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await proc.communicate()
-    data = json.loads(stdout)
-
-    info = MediaInfo()
-
-    # Determine media type and extract stream info
-    streams = data.get("streams", [])
-    for stream in streams:
-        codec_type = stream.get("codec_type")
-        if codec_type == "video":
-            info.media_type = MediaType.VIDEO
-            info.codec_video = stream.get("codec_name")
-            info.width = int(stream.get("width", 0)) or None
-            info.height = int(stream.get("height", 0)) or None
-        elif codec_type == "audio":
-            if info.media_type == MediaType.UNKNOWN:
-                info.media_type = MediaType.AUDIO
-            info.codec_audio = stream.get("codec_name")
-            info.sample_rate = int(stream.get("sample_rate", 0)) or None
-            info.channels = int(stream.get("channels", 0)) or None
-
-    # Duration from format
-    fmt = data.get("format", {})
-    info.duration_sec = float(fmt.get("duration", 0))
-
-    return info
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    return json.loads(r.stdout)
 
 
-async def extract_audio(
+def extract_audio(
     input_path: Path,
     output_path: Path,
     sample_rate: int = 16000,
@@ -65,45 +48,56 @@ async def extract_audio(
         "-ar", str(sample_rate),
         str(output_path),
     ]
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    _, stderr = await proc.communicate()
-    if proc.returncode != 0:
-        raise RuntimeError(f"ffmpeg failed: {stderr.decode()}")
+    r = subprocess.run(cmd, capture_output=True)
+    if r.returncode != 0:
+        raise RuntimeError(f"ffmpeg extract_audio failed: {r.stderr.decode()}")
 
 
-async def split_audio(
+def split_audio(
     input_path: Path,
     output_dir: Path,
     chunk_duration_sec: int = 180,
 ) -> list[Path]:
-    """Split audio into fixed-duration chunks for chunked transcription."""
-    info = await probe_file(input_path)
-    total = info.duration_sec
+    """Split audio into fixed-duration chunks for chunked transcription.
+
+    Returns list of chunk file paths in order.
+    """
+    total = probe_duration(input_path)
     chunks: list[Path] = []
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for i, start in enumerate(range(0, int(total) + 1, chunk_duration_sec)):
-        chunk_path = output_dir / f"chunk_{i:03d}.wav"
-        cmd = [
-            "ffmpeg", "-y", "-nostdin",
-            "-i", str(input_path),
-            "-ss", str(start),
-            "-t", str(chunk_duration_sec),
-            "-ac", "1", "-ar", "16000",
-            str(chunk_path),
-        ]
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        await proc.communicate()
+    idx = 0
+    offset = 0.0
+    while offset < total:
+        chunk_path = output_dir / f"chunk_{idx:03d}.wav"
+        if not chunk_path.exists():
+            cmd = [
+                "ffmpeg", "-y", "-nostdin",
+                "-i", str(input_path),
+                "-ss", str(offset),
+                "-t", str(chunk_duration_sec),
+                "-ac", "1", "-ar", "16000",
+                str(chunk_path),
+            ]
+            subprocess.run(cmd, capture_output=True)
+
         if chunk_path.exists() and chunk_path.stat().st_size > 0:
             chunks.append(chunk_path)
+        offset += chunk_duration_sec
+        idx += 1
 
     return chunks
+
+
+def convert_to_mp3(input_path: Path, output_path: Path, bitrate: str = "64k") -> None:
+    """Convert audio to mp3 (e.g., for API upload size reduction)."""
+    cmd = [
+        "ffmpeg", "-y", "-nostdin",
+        "-i", str(input_path),
+        "-codec:a", "libmp3lame", "-b:a", bitrate,
+        str(output_path),
+    ]
+    r = subprocess.run(cmd, capture_output=True)
+    if r.returncode != 0:
+        raise RuntimeError(f"ffmpeg convert_to_mp3 failed: {r.stderr.decode()}")
