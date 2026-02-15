@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mediascribe"
+version = "0.1.0"
+description = "TUI-first tool for transcribing, translating, and analyzing audio/video media"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+authors = [{ name = "Shawn Petros" }]
+keywords = ["transcription", "subtitles", "whisper", "translation", "tui"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Multimedia :: Video",
+]
+
+dependencies = [
+    # Core
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+
+    # Transcription
+    "faster-whisper>=1.1.0",
+    "openai>=1.70.0",
+
+    # Subtitle handling
+    "pysrt>=1.1.2",
+
+    # CLI
+    "typer>=0.12",
+    "rich>=13.0",
+
+    # Utilities
+    "psutil>=5.9",
+]
+
+[project.optional-dependencies]
+tui = [
+    "textual>=0.80",
+    "textual-fspicker>=0.0.1",
+]
+diarize = [
+    "pyannote-audio>=3.0",
+]
+all = ["mediascribe[tui,diarize]"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+mediascribe = "mediascribe.cli.app:main"
+
+[project.urls]
+Repository = "https://github.com/shawnpetros/mediascribe"
+
+# ── Tool Config ──────────────────────────────────────────
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mediascribe"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
