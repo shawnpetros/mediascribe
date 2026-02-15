@@ -73,7 +73,7 @@ def validate_segments(segs: list[dict]) -> tuple[bool, str]:
 # ── Post-processing ──────────────────────────────────────────────────────────
 
 
-def _text_similar(a: str, b: str, threshold: float = 0.8) -> bool:
+def _text_similar(a: str, b: str, threshold: float = 0.7) -> bool:
     """Check if two texts are similar enough to be the same sentence.
 
     Uses simple character-overlap ratio — fast and sufficient for catching
