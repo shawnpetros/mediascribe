@@ -45,6 +45,7 @@ class MediascribeSettings(BaseSettings):
     whisper_device: str = "auto"
     whisper_compute: str = "int8"
     chunk_duration_sec: int = 180
+    chunk_overlap_sec: int = 15
     word_timestamps: bool = True
 
     # ── Translation ──────────────────────────────────────

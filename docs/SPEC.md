@@ -82,7 +82,7 @@ Input File(s)
     │
     ▼
 [Transcribe] → raw segments [{start, end, text, confidence}]
-    │         (local: chunked + validated | API: single-shot)
+    │         (local: overlap-chunked + validated + deduped | API: single-shot)
     │
     ├──▶ [Diarize] → speaker labels per segment (optional)
     │
@@ -180,7 +180,7 @@ src/mediascribe/
 | **Config system** | Pydantic settings, .env, XDG config dir (`~/.config/mediascribe/`) |
 | **Detect step** | ffprobe-based file type, codec, duration, channel detection |
 | **Normalize step** | Extract audio, convert to 16kHz mono WAV |
-| **Transcribe step** | Local (faster-whisper, chunked + validated) and API (OpenAI) modes |
+| **Transcribe step** | Local (faster-whisper, overlap-chunked + validated) and API (OpenAI) modes |
 | **Timing step** | Word-timestamp-based timing + duration cap + gap enforcement |
 | **Translate step** | Batched OpenAI translation with context overlap |
 | **Review step** | Second-pass AI quality check |
@@ -282,6 +282,7 @@ class MediascribeSettings(BaseSettings):
     whisper_device: str = "auto"
     whisper_compute: str = "int8"
     chunk_duration_sec: int = 180
+    chunk_overlap_sec: int = 15
 
     # Translation
     translation_model: str = "gpt-4.1"
@@ -455,7 +456,56 @@ Each step:
 
 ---
 
-## 10. 12-Factor Compliance
+## 10. Key Design Decisions
+
+### 10.1 Package Name: `mediascribe`
+Both `mediascribe` and `scribeflow` are available on PyPI. `subforge` is taken.
+We chose **mediascribe** — clear, descriptive ("media in, scribed text out"),
+covers all use cases (subtitles, transcripts, meeting notes), and the import
+name is clean (`import mediascribe`).
+
+### 10.2 Diarization: pyannote.audio 3.x
+We use **pyannote.audio** directly rather than WhisperX because:
+- We already own the transcription pipeline (chunked faster-whisper with validation).
+- WhisperX bundles its own transcription, which conflicts with our architecture.
+- pyannote is the actual diarization engine either way (WhisperX uses it under the hood).
+- Direct pyannote gives us full control and future-proofs for model swaps.
+- Requires a HuggingFace token (gated model), configured via `huggingface_token`.
+
+### 10.3 No Real-Time Streaming (v1)
+Streaming transcription is **out of scope** for v1. Rationale:
+- Fundamentally different architecture (VAD-gated ring buffers, partial results, event streams).
+- Our batch pipeline (chunked + validated + deduped) produces significantly better results.
+- Primary use cases are all file-based (anime, podcasts, meetings, lectures).
+- Could be added as a separate `mediascribe live` command in a future phase.
+
+### 10.4 Overlap-Based Chunking
+When splitting audio for chunked transcription, chunks **overlap by 15 seconds**
+(configurable via `chunk_overlap_sec`) so that sentences at boundaries are fully
+captured in at least one chunk. Post-processing deduplication reconciles the
+overlap zone using:
+1. Exact text match + close timestamps → merge (extend end time)
+2. Fuzzy text similarity + overlapping time → keep the longer (more complete) version
+3. Exact match still on screen → skip duplicate
+
+This eliminates mid-sentence cuts that caused dropped words or hallucinations
+at chunk boundaries.
+
+```
+Without overlap (risky):
+  Chunk 1: [0:00 ──────── 3:00]
+  Chunk 2:                      [3:00 ──────── 6:00]
+                            ↑ sentence split here
+
+With overlap (safe, default):
+  Chunk 1: [0:00 ──────── 3:00 ── 3:15]
+  Chunk 2:                [2:45 ── 3:00 ──────── 6:00 ── 6:15]
+                          ├── 30s overlap zone ──┤
+```
+
+---
+
+## 11. 12-Factor Compliance
 
 | Factor | Implementation |
 |--------|----------------|

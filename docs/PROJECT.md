@@ -7,9 +7,9 @@
 
 ## Current Status
 
-**Phase:** 1 — Core Library + CLI (MVP) — **CORE COMPLETE**
+**Phase:** 1 — Core Library + CLI (MVP) — **CORE COMPLETE + TESTED**
 **Last Session:** 2026-02-15
-**Last Agent/Session Notes:** Full extraction of pipeline.py into modular architecture complete. All core steps implemented, CLI wired and functional. Ready for Phase 2 (TUI) or further Phase 1 polish (tests, CI).
+**Last Agent/Session Notes:** All open questions resolved. Overlap-based chunking implemented. Comprehensive test suite added for core logic modules.
 
 ---
 
@@ -66,11 +66,26 @@
 9. feat: review step — AI second-pass quality check on translations
 10. feat: wire CLI to real pipeline — end-to-end functional
 
-**Open Questions:**
-- Final package name (mediascribe? scribeflow? subforge?)
-- PyPI name availability check
-- Diarization model choice (pyannote vs whisperx)
-- Whether to support real-time/streaming transcription
+**Resolved Questions:**
+- [x] Package name -> **mediascribe** (available on PyPI; scribeflow also available; subforge taken)
+- [x] Diarization -> **pyannote.audio 3.x** directly (we own transcription; WhisperX conflicts)
+- [x] Streaming -> **No for v1** (different architecture, niche demand, quality tradeoff)
+- [x] Chunk boundary accuracy -> **Overlap-based chunking** (15s overlap + fuzzy dedup)
+
+### Session 3 — 2026-02-15 (continued)
+**Focus:** Resolve open questions, overlap-chunking QoL, test suite
+**Completed:**
+- Resolved all open questions (package name, diarization, streaming, chunking)
+- Implemented overlap-based chunking in split_audio (15s configurable overlap)
+- Added fuzzy text similarity dedup for chunk boundary reconciliation
+- Added chunk_overlap_sec config setting
+- Updated SPEC.md with design decisions (section 10)
+- Wrote comprehensive test suite for core logic
+
+**Commits:**
+11. feat: overlap-based chunking — eliminates mid-sentence cuts
+12. test: comprehensive test suite for core logic modules
+13. docs: resolve open questions, update SPEC.md + PROJECT.md
 
 ---
 
@@ -83,7 +98,7 @@
 - [x] Module directory structure
 - [x] .gitignore
 - [x] Git repo initialized
-- [ ] Basic test structure
+- [x] Basic test structure
 - [ ] CI config (GitHub Actions)
 - [ ] Dev environment setup docs
 
@@ -98,7 +113,7 @@
 - [x] steps/base.py — Abstract step interface (sync-first)
 - [x] steps/detect.py — File type + language detection via ffprobe
 - [x] steps/normalize.py — Audio extraction + normalization
-- [x] steps/transcribe.py — Local (chunked + validated) + API modes
+- [x] steps/transcribe.py — Overlap-chunked local + API with validation/retry/dedup
 - [x] steps/timing.py — Word-timestamp timing + duration cap + gaps
 - [x] steps/translate.py — Batched OpenAI translation with context overlap
 - [x] steps/review.py — Second-pass AI quality check
@@ -116,14 +131,14 @@
 - [x] models/prompts.py — Prompt template system (4 profiles)
 
 ### 1.6 Utilities
-- [x] utils/ffmpeg.py — FFmpeg/ffprobe wrapper functions
+- [x] utils/ffmpeg.py — FFmpeg/ffprobe wrapper functions (with overlap chunking)
 - [x] utils/paths.py — XDG dirs, temp file management
 - [x] utils/logging.py — Structured logging setup (Rich)
 
 ### 1.7 CLI Interface
 - [x] cli/app.py — Typer app with transcribe, batch, config, tui commands
 - [x] cli/output.py — Rich event handler + pipeline runner
-- [x] End-to-end pipeline wiring (detect > normalize > transcribe > translate > review)
+- [x] End-to-end pipeline wiring (detect -> normalize -> transcribe -> translate -> review)
 - [ ] mediascribe translate <srt> — standalone translate command
 - [ ] mediascribe config set/get/list — config management
 
@@ -147,7 +162,7 @@
 - [ ] Profile-to-pipeline config mapping
 
 ### 2.3 Smart Features
-- [ ] Custom prompt builder (user intent > system prompt)
+- [ ] Custom prompt builder (user intent -> system prompt)
 - [ ] Hardware detection + concurrency recommendation
 - [ ] Processing time estimation
 - [ ] Large batch warnings
@@ -156,7 +171,7 @@
 
 ## Phase 3 — Advanced Features
 
-- [ ] Speaker diarization (pyannote.audio integration)
+- [ ] Speaker diarization (pyannote.audio 3.x integration)
 - [ ] Analyze step (summarize, topics, action items)
 - [ ] Markdown transcript format with speaker labels
 - [ ] Model download/cache management CLI
@@ -189,6 +204,23 @@
 | 2026-02-14 | Word timestamps on | Accurate timing, no wall-to-wall subs |
 | 2026-02-14 | gpt-4.1 for translation | Better nuance vs mini |
 | 2026-02-15 | Sync-first steps | Simpler code, TUI wraps in bg thread |
+| 2026-02-15 | mediascribe name | Available on PyPI, clear, covers all use cases |
+| 2026-02-15 | pyannote.audio 3.x | Best-in-class diarization, decoupled from transcription |
+| 2026-02-15 | No streaming v1 | Different architecture, niche demand, quality tradeoff |
+| 2026-02-15 | Overlap chunking (15s) | Eliminates mid-sentence cuts at chunk boundaries |
+
+---
+
+## Reference Implementation
+
+The Yokai Watch pipeline (../pipeline.py) serves as the proven reference for:
+- **Chunked transcription** with loop detection and retry
+- **Word-timestamp timing** with duration cap and gap enforcement
+- **Batched translation** with context overlap
+- **Two-pass review** for quality
+- **Idempotent execution** with skip-if-exists
+
+This logic has been fully extracted into the modular step system.
 
 ---
 
@@ -200,6 +232,6 @@ When picking up this project in a new session:
 2. Read SPEC.md for architecture and feature details
 3. Check the current phase and find the next unchecked task
 4. Reference ../pipeline.py for the original proven patterns
-5. Run tests before and after changes
+5. Run tests: cd mediascribe && pip install -e ".[dev]" && pytest
 6. Update this file after completing work
-7. Commit after each feature
+7. Commit after each feature: git add -A && git commit -m "feat: ..."

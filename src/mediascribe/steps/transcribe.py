@@ -73,21 +73,66 @@ def validate_segments(segs: list[dict]) -> tuple[bool, str]:
 # ── Post-processing ──────────────────────────────────────────────────────────
 
 
+def _text_similar(a: str, b: str, threshold: float = 0.8) -> bool:
+    """Check if two texts are similar enough to be the same sentence.
+
+    Uses simple character-overlap ratio — fast and sufficient for catching
+    Whisper's slightly-different transcriptions of the same audio.
+    """
+    if a == b:
+        return True
+    if not a or not b:
+        return False
+
+    # Quick length check — very different lengths → different text
+    if min(len(a), len(b)) / max(len(a), len(b)) < 0.5:
+        return False
+
+    # Character-level overlap (order-independent)
+    from collections import Counter as _Counter
+    ca, cb = _Counter(a), _Counter(b)
+    overlap = sum((ca & cb).values())
+    total = max(sum(ca.values()), sum(cb.values()))
+    return (overlap / total) >= threshold if total else True
+
+
 def _deduplicate_segments(segments: list[dict]) -> list[dict]:
-    """Sort and deduplicate segments at chunk boundaries."""
+    """Sort and deduplicate segments at chunk boundaries.
+
+    With overlapping chunks, the same speech may be transcribed in both
+    chunks.  We catch duplicates by:
+      1. Exact text + close timestamp → merge (extend end time)
+      2. Fuzzy-similar text + overlapping time range → keep the longer one
+      3. Exact text still on screen (prev not yet ended) → skip
+    """
     segments.sort(key=lambda s: s["start"])
     deduped: list[dict] = []
 
     for s in segments:
         if deduped:
             prev = deduped[-1]
-            # Same text and nearly same timestamp → merge
+
+            # ① Exact match with close timestamps → merge
             if s["text"] == prev["text"] and abs(s["start"] - prev["start"]) < 2.0:
                 prev["end"] = max(prev["end"], s["end"])
                 continue
-            # Same text, overlapping → skip
+
+            # ② Exact match, still overlapping → skip the later one
             if s["text"] == prev["text"] and s["start"] < prev["end"] + 0.5:
                 continue
+
+            # ③ Fuzzy match with overlapping time → keep the longer text
+            if (
+                abs(s["start"] - prev["start"]) < 3.0
+                and _text_similar(s["text"], prev["text"])
+            ):
+                # Keep whichever transcription is longer (more complete)
+                if len(s["text"]) > len(prev["text"]):
+                    deduped[-1] = s
+                else:
+                    prev["end"] = max(prev["end"], s["end"])
+                continue
+
         deduped.append(s)
 
     return deduped
@@ -121,29 +166,32 @@ def _transcribe_local(
     events: EventBus,
     stem: str,
 ) -> list[dict]:
-    """Chunked local transcription with loop detection and retries."""
+    """Chunked local transcription with overlap, loop detection, and retries.
+
+    Chunks overlap by ``chunk_overlap_sec`` so sentences at boundaries are
+    fully captured.  The dedup step reconciles the overlap zone afterwards.
+    """
     from mediascribe.models.whisper_local import transcribe_chunk
 
     dur = probe_duration(wav_path)
     chunk_sec = settings.chunk_duration_sec
-    n_chunks = int(dur // chunk_sec) + (1 if dur % chunk_sec > 0 else 0)
+    overlap_sec = settings.chunk_overlap_sec
+
+    # Split WAV into overlapping chunks
+    chunk_dir = output_dir / "_chunks" / stem
+    chunks, offsets = split_audio(wav_path, chunk_dir, chunk_sec, overlap_sec)
 
     events.log(
-        f"Duration: {fmt_ts(dur)} | {n_chunks} chunks × {chunk_sec}s",
+        f"Duration: {fmt_ts(dur)} | {len(chunks)} chunks × {chunk_sec}s "
+        f"(overlap {overlap_sec}s)",
         step="transcribe",
     )
-
-    # Split WAV into chunks
-    chunk_dir = output_dir / "_chunks" / stem
-    chunks = split_audio(wav_path, chunk_dir, chunk_sec)
-    events.log(f"Split into {len(chunks)} chunks", step="transcribe")
 
     # Transcribe each chunk
     all_segments: list[dict] = []
     chunk_times: list[float] = []
 
-    for ci, chunk_path in enumerate(chunks):
-        offset = ci * chunk_sec
+    for ci, (chunk_path, offset) in enumerate(zip(chunks, offsets)):
         end_sec = min(offset + chunk_sec, dur)
         label = f"Chunk {ci + 1}/{len(chunks)}  {fmt_ts(offset)}→{fmt_ts(end_sec)}"
 
