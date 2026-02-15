@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "TUI-first tool for transcribing, translating, and analyzing audio/video media"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 authors = [{ name = "Shawn Petros" }]
 keywords = ["transcription", "subtitles", "whisper", "translation", "tui"]
 classifiers = [

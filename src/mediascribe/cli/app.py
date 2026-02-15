@@ -152,8 +152,14 @@ def config() -> None:
 @app.command()
 def tui() -> None:
     """Launch the interactive TUI."""
-    console.print("[yellow]TUI — coming in Phase 2.[/yellow]")
-    console.print("Use the CLI commands for now: mediascribe transcribe <file>")
+    try:
+        from mediascribe.tui import run_tui
+    except ImportError:
+        console.print("[red]TUI dependencies not installed.[/red]")
+        console.print("Install with: pip install mediascribe[tui]")
+        raise typer.Exit(1)
+
+    run_tui()
 
 
 if __name__ == "__main__":
