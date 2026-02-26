@@ -4,10 +4,18 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v0.2.0)"
+        required: false
 
 permissions:
   contents: write
   id-token: write
+
+env:
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
 jobs:
   # ── Gate: run full CI before publishing ───────────────
@@ -106,9 +114,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          gh release create "$TAG" dist/* \
-            --title "mediascribe $TAG" \
+          gh release create "$RELEASE_TAG" dist/* \
+            --title "mediascribe $RELEASE_TAG" \
             --generate-notes
 
   # ── Update Homebrew tap formula ─────────────────────────
