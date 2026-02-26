@@ -139,10 +139,7 @@ class TranslateStep(PipelineStep):
         target = settings.target_language
         draft_path = job.output_dir / f"{job.stem}_{target}_draft.srt"
 
-        # Get prompt template (default to "general" if profile not found)
-        # The profile name could be stored in settings.custom_instructions metadata
-        # For now, use "general" template. Profiles are a Phase 2 feature.
-        template = TEMPLATES.get("general", TEMPLATES["general"])
+        template = TEMPLATES.get(settings.profile, TEMPLATES["general"])
         system_prompt, _ = render_prompt(
             template, target, settings.custom_instructions,
         )

@@ -11,6 +11,7 @@ from mediascribe.core.events import EventBus, EventType, PipelineEvent
 from mediascribe.core.job import Job
 from mediascribe.core.pipeline import Pipeline
 from mediascribe.steps.detect import DetectStep
+from mediascribe.steps.export import ExportStep
 from mediascribe.steps.normalize import NormalizeStep
 from mediascribe.steps.review import ReviewStep
 from mediascribe.steps.transcribe import TranscribeStep
@@ -73,6 +74,7 @@ def run_pipeline_for_file(
     transcription_mode: str = "auto",
     custom_instructions: str = "",
     enable_review: bool = True,
+    output_formats: list[str] | None = None,
 ) -> None:
     """Run the full pipeline on a single file with CLI output.
 
@@ -91,6 +93,8 @@ def run_pipeline_for_file(
         custom_instructions=custom_instructions,
         enable_review_pass=enable_review,
         output_dir=output_dir,
+        profile=profile,
+        output_formats=output_formats or ["srt"],
     )
     settings.ensure_dirs()
 
@@ -107,6 +111,7 @@ def run_pipeline_for_file(
         pipeline.add_step(TranslateStep())
         if enable_review:
             pipeline.add_step(ReviewStep())
+    pipeline.add_step(ExportStep())
 
     # Create job
     job = Job(

@@ -63,6 +63,7 @@ def transcribe(
     output: Annotated[Path, typer.Option("--output", "-o", help="Output directory")] = Path("./output"),
     custom: Annotated[str, typer.Option("--custom", help="Custom instructions for translation")] = "",
     no_review: Annotated[bool, typer.Option("--no-review", help="Skip the review (second) pass")] = False,
+    formats: Annotated[str, typer.Option("--formats", "-f", help="Output formats (comma-separated): srt,vtt,txt,json")] = "srt",
 ) -> None:
     """Transcribe (and optionally translate) a single file."""
     from mediascribe.cli.output import run_pipeline_for_file
@@ -70,6 +71,8 @@ def transcribe(
     if not file.exists():
         console.print(f"[red]Error:[/red] File not found: {file}")
         raise typer.Exit(1)
+
+    output_formats = [f.strip() for f in formats.split(",") if f.strip()]
 
     run_pipeline_for_file(
         input_path=file,
@@ -82,6 +85,7 @@ def transcribe(
         transcription_mode=mode,
         custom_instructions=custom,
         enable_review=not no_review,
+        output_formats=output_formats,
     )
 
 
@@ -98,6 +102,7 @@ def batch(
     output: Annotated[Path, typer.Option("--output", "-o")] = Path("./output"),
     custom: Annotated[str, typer.Option("--custom")] = "",
     no_review: Annotated[bool, typer.Option("--no-review")] = False,
+    formats: Annotated[str, typer.Option("--formats", "-f", help="Output formats: srt,vtt,txt,json")] = "srt",
 ) -> None:
     """Process all media files in a folder."""
     from mediascribe.cli.output import run_pipeline_for_file
@@ -115,6 +120,8 @@ def batch(
         console.print(f"[yellow]No media files found in {folder}[/yellow]")
         raise typer.Exit(0)
 
+    output_formats = [f.strip() for f in formats.split(",") if f.strip()]
+
     console.print(f"\n[bold]Batch processing {len(files)} files[/bold]\n")
 
     for i, f in enumerate(files, 1):
@@ -131,6 +138,7 @@ def batch(
             translation_model=model,
             custom_instructions=custom,
             enable_review=not no_review,
+            output_formats=output_formats,
         )
 
     console.print(f"\n[bold green]All {len(files)} files processed.[/bold green]")
