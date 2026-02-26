@@ -64,6 +64,8 @@ def transcribe(
     custom: Annotated[str, typer.Option("--custom", help="Custom instructions for translation")] = "",
     no_review: Annotated[bool, typer.Option("--no-review", help="Skip the review (second) pass")] = False,
     formats: Annotated[str, typer.Option("--formats", "-f", help="Output formats (comma-separated): srt,vtt,txt,json")] = "srt",
+    diarize: Annotated[bool, typer.Option("--diarize", help="Enable speaker diarization (requires pyannote.audio)")] = False,
+    analyze: Annotated[bool, typer.Option("--analyze", help="Enable AI analysis (summary, topics, action items)")] = False,
 ) -> None:
     """Transcribe (and optionally translate) a single file."""
     from mediascribe.cli.output import run_pipeline_for_file
@@ -86,6 +88,8 @@ def transcribe(
         custom_instructions=custom,
         enable_review=not no_review,
         output_formats=output_formats,
+        enable_diarize=diarize,
+        enable_analyze=analyze,
     )
 
 
@@ -103,6 +107,8 @@ def batch(
     custom: Annotated[str, typer.Option("--custom")] = "",
     no_review: Annotated[bool, typer.Option("--no-review")] = False,
     formats: Annotated[str, typer.Option("--formats", "-f", help="Output formats: srt,vtt,txt,json")] = "srt",
+    diarize: Annotated[bool, typer.Option("--diarize", help="Enable speaker diarization")] = False,
+    analyze: Annotated[bool, typer.Option("--analyze", help="Enable AI analysis")] = False,
 ) -> None:
     """Process all media files in a folder."""
     from mediascribe.cli.output import run_pipeline_for_file
@@ -139,6 +145,8 @@ def batch(
             custom_instructions=custom,
             enable_review=not no_review,
             output_formats=output_formats,
+            enable_diarize=diarize,
+            enable_analyze=analyze,
         )
 
     console.print(f"\n[bold green]All {len(files)} files processed.[/bold green]")

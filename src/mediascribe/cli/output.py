@@ -10,7 +10,9 @@ from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.events import EventBus, EventType, PipelineEvent
 from mediascribe.core.job import Job
 from mediascribe.core.pipeline import Pipeline
+from mediascribe.steps.analyze import AnalyzeStep
 from mediascribe.steps.detect import DetectStep
+from mediascribe.steps.diarize import DiarizeStep
 from mediascribe.steps.export import ExportStep
 from mediascribe.steps.normalize import NormalizeStep
 from mediascribe.steps.review import ReviewStep
@@ -75,6 +77,8 @@ def run_pipeline_for_file(
     custom_instructions: str = "",
     enable_review: bool = True,
     output_formats: list[str] | None = None,
+    enable_diarize: bool = False,
+    enable_analyze: bool = False,
 ) -> None:
     """Run the full pipeline on a single file with CLI output.
 
@@ -107,10 +111,14 @@ def run_pipeline_for_file(
     pipeline.add_step(DetectStep())
     pipeline.add_step(NormalizeStep())
     pipeline.add_step(TranscribeStep())
+    if enable_diarize:
+        pipeline.add_step(DiarizeStep())
     if target_language:
         pipeline.add_step(TranslateStep())
         if enable_review:
             pipeline.add_step(ReviewStep())
+    if enable_analyze:
+        pipeline.add_step(AnalyzeStep())
     pipeline.add_step(ExportStep())
 
     # Create job
