@@ -38,9 +38,41 @@ jobs:
           name: dist
           path: dist/
 
+  # ── Smoke test the built wheel ─────────────────────────
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Install from wheel
+        run: |
+          pip install dist/*.whl
+          pip install pytest
+
+      - name: Verify CLI loads
+        run: |
+          mediascribe --version
+          mediascribe --help
+          mediascribe config show
+
+      - name: Run integration tests
+        run: pytest tests/test_cli_integration.py -v --tb=short
+
   # ── Publish to PyPI via trusted publisher (OIDC) ──────
   publish-pypi:
-    needs: build
+    needs: [build, smoke]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -57,7 +89,7 @@ jobs:
 
   # ── Create GitHub Release ─────────────────────────────
   github-release:
-    needs: build
+    needs: [build, smoke]
     runs-on: ubuntu-latest
     permissions:
       contents: write

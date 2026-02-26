@@ -37,6 +37,10 @@ test-quick: ## Run tests without verbose output
 test-cov: ## Run tests with coverage report
 	$(PYTHON) -m pytest $(TESTS) -v --tb=short --cov=$(SRC) --cov-report=term-missing
 
+.PHONY: smoke
+smoke: ## Run integration smoke tests (CLI loads, commands respond)
+	$(PYTHON) -m pytest $(TESTS)/test_cli_integration.py -v --tb=short
+
 .PHONY: lint
 lint: ## Run ruff linter
 	$(PYTHON) -m ruff check $(SRC) $(TESTS)
