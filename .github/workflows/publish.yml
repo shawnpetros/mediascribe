@@ -138,7 +138,7 @@ jobs:
           VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          URL="https://files.pythonhosted.org/packages/source/m/mediascribe/mediascribe-${VERSION}.tar.gz"
+          URL="https://files.pythonhosted.org/packages/50/c9/842068d9185b040be914b07d64976021d555ebe3e869427193bb0c745c53/mediascribe-${VERSION}.tar.gz"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
           # Wait briefly for PyPI to propagate, then download and hash
