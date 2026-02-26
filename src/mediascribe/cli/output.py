@@ -137,7 +137,82 @@ def run_pipeline_for_file(
 
     # Summary
     console.print(f"\n{'─' * 60}")
-    console.print(f"  [bold]Output:[/bold]")
+    console.print("  [bold]Output:[/bold]")
     for p in sorted(output_dir.glob(f"{job.stem}*")):
         console.print(f"    {p.name}")
+    console.print(f"{'─' * 60}")
+
+
+def run_translate_srt(
+    srt_path: Path,
+    output_dir: Path,
+    target_language: str = "en",
+    profile: str = "general",
+    translation_model: str = "gpt-4.1",
+    custom_instructions: str = "",
+    enable_review: bool = True,
+) -> None:
+    """Translate an existing SRT file without re-transcribing.
+
+    Runs only the translate (and optionally review) steps on an SRT file,
+    producing a translated SRT in the output directory.
+    """
+    import shutil
+
+    from dotenv import load_dotenv
+
+    from mediascribe.formats.srt import srt_to_segments
+
+    load_dotenv()
+
+    settings = MediascribeSettings(
+        target_language=target_language,
+        translation_model=translation_model,
+        custom_instructions=custom_instructions,
+        enable_review_pass=enable_review,
+        output_dir=output_dir,
+        profile=profile,
+    )
+    settings.ensure_dirs()
+
+    events = EventBus()
+    events.subscribe(_make_event_handler())
+
+    # Copy source SRT into output dir so translate step can find it
+    stem = srt_path.stem
+    source_srt_dest = output_dir.resolve() / f"{stem}_source.srt"
+    shutil.copy2(srt_path, source_srt_dest)
+    settings.source_language = "source"
+
+    # Build a minimal job with segments loaded from the SRT
+    job = Job(
+        input_path=srt_path.resolve(),
+        output_dir=output_dir.resolve(),
+    )
+    job.segments = srt_to_segments(srt_path)
+
+    # Build translate-only pipeline
+    pipeline = Pipeline(settings, events)
+    pipeline.add_step(TranslateStep())
+    if enable_review:
+        pipeline.add_step(ReviewStep())
+
+    console.print("╔══════════════════════════════════════════════════════════╗")
+    console.print("║  [bold]mediascribe[/bold] — SRT translation pipeline               ║")
+    console.print(f"║  Model:    {translation_model:<45s}║")
+    console.print(f"║  Profile:  {profile:<45s}║")
+    console.print(f"║  Target:   {target_language:<45s}║")
+    console.print("╚══════════════════════════════════════════════════════════╝")
+
+    result = pipeline.run(job)
+
+    if result.error:
+        console.print(f"\n[bold red]Translation failed: {result.error}[/bold red]")
+        raise SystemExit(1)
+
+    console.print(f"\n{'─' * 60}")
+    console.print("  [bold]Output:[/bold]")
+    for p in sorted(output_dir.glob(f"{stem}*")):
+        if p != source_srt_dest:
+            console.print(f"    {p.name}")
     console.print(f"{'─' * 60}")
