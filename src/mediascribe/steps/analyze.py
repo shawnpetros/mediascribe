@@ -57,7 +57,10 @@ class AnalyzeStep(PipelineStep):
     required = False
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         if not job.segments:
             events.warn("No segments to analyze", step=self.name)
@@ -106,6 +109,7 @@ class AnalyzeStep(PipelineStep):
             raw = resp.output_text.strip()
             # Strip markdown fences if present
             import re
+
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
             analysis = json.loads(raw)
@@ -133,11 +137,13 @@ class AnalyzeStep(PipelineStep):
             step=self.name,
         )
 
-        return StepResult(data={
-            "topic_count": topic_count,
-            "action_item_count": action_count,
-            "has_summary": bool(analysis.get("summary")),
-        })
+        return StepResult(
+            data={
+                "topic_count": topic_count,
+                "action_item_count": action_count,
+                "has_summary": bool(analysis.get("summary")),
+            }
+        )
 
     def can_skip(self, job: Job) -> bool:
         return bool(job.analysis.get("summary"))

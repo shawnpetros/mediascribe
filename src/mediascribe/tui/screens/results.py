@@ -94,6 +94,7 @@ class ResultsScreen(Screen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-more":
             from mediascribe.tui.screens.picker import PickerScreen
+
             self.app.push_screen(PickerScreen())
         elif event.button.id == "btn-quit":
             self.app.exit()

@@ -10,7 +10,6 @@ Covers:
 """
 
 import os
-import pytest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -23,8 +22,8 @@ from mediascribe.core.job import (
     Segment,
 )
 
-
 # ── MediascribeSettings ─────────────────────────────────────────────────────
+
 
 class TestSettings:
     def test_defaults(self):
@@ -76,6 +75,7 @@ class TestSettings:
 
 # ── Job Model ────────────────────────────────────────────────────────────────
 
+
 class TestJob:
     def test_creation(self, tmp_path: Path):
         input_file = tmp_path / "video.mp4"
@@ -106,6 +106,7 @@ class TestJob:
 
 # ── JobStatus Enum ───────────────────────────────────────────────────────────
 
+
 class TestJobStatus:
     def test_values(self):
         assert JobStatus.PENDING.value == "pending"
@@ -117,6 +118,7 @@ class TestJobStatus:
 
 # ── MediaType Enum ───────────────────────────────────────────────────────────
 
+
 class TestMediaType:
     def test_values(self):
         assert MediaType.VIDEO.value == "video"
@@ -125,6 +127,7 @@ class TestMediaType:
 
 
 # ── MediaInfo ────────────────────────────────────────────────────────────────
+
 
 class TestMediaInfo:
     def test_defaults(self):
@@ -137,6 +140,7 @@ class TestMediaInfo:
 
 
 # ── Segment ──────────────────────────────────────────────────────────────────
+
 
 class TestSegment:
     def test_creation(self):

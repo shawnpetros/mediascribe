@@ -20,6 +20,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 def _default_config_dir() -> Path:
     """XDG-compliant config directory."""
     import os
+
     xdg = os.environ.get("XDG_CONFIG_HOME", "")
     base = Path(xdg) if xdg else Path.home() / ".config"
     return base / "mediascribe"
@@ -56,8 +57,8 @@ class MediascribeSettings(BaseSettings):
     profile: str = "general"
 
     # ── Source / Target ──────────────────────────────────
-    source_language: str | None = None       # None = auto-detect
-    target_language: str | None = None       # None = skip translation
+    source_language: str | None = None  # None = auto-detect
+    target_language: str | None = None  # None = skip translation
 
     # ── Processing ───────────────────────────────────────
     max_concurrency: int = 1
@@ -67,7 +68,7 @@ class MediascribeSettings(BaseSettings):
     # ── Subtitle Timing ──────────────────────────────────
     max_subtitle_duration_sec: float = 7.0
     min_gap_sec: float = 0.15
-    chars_per_second: float = 5.0            # for duration cap heuristic
+    chars_per_second: float = 5.0  # for duration cap heuristic
 
     # ── Paths ────────────────────────────────────────────
     config_dir: Path = _default_config_dir()

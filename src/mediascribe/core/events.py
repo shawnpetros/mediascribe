@@ -6,9 +6,10 @@ This decouples the pipeline from any specific UI implementation.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 
 class EventType(Enum):
@@ -38,7 +39,7 @@ class PipelineEvent:
     type: EventType
     step_name: str | None = None
     message: str = ""
-    progress: float = 0.0          # 0.0 → 1.0
+    progress: float = 0.0  # 0.0 → 1.0
     data: dict[str, Any] = field(default_factory=dict)
 
 

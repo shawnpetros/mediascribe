@@ -148,7 +148,7 @@ class PipelineScreen(Screen):
 
             events = EventBus()
 
-            def make_handler(base: float, frange: float):
+            def make_handler(base: float, frange: float, idx: int):
                 def handler(event: PipelineEvent) -> None:
                     match event.type:
                         case EventType.STEP_START:
@@ -156,7 +156,7 @@ class PipelineScreen(Screen):
                         case EventType.STEP_PROGRESS:
                             pct = base + (event.progress * frange * 0.8)
                             self._set_progress(
-                                f"[{file_idx + 1}/{total_files}] {event.message}",
+                                f"[{idx + 1}/{total_files}] {event.message}",
                                 pct,
                             )
                         case EventType.STEP_COMPLETE:
@@ -175,9 +175,10 @@ class PipelineScreen(Screen):
                             self._log(f"  ** {event.message}")
                         case EventType.JOB_ERROR:
                             self._log(f"  !! {event.message}")
+
                 return handler
 
-            events.subscribe(make_handler(file_pct_base, file_pct_range))
+            events.subscribe(make_handler(file_pct_base, file_pct_range, file_idx))
 
             pipeline = Pipeline(settings, events)
             pipeline.add_step(DetectStep())
@@ -211,7 +212,7 @@ class PipelineScreen(Screen):
         self._finish(all_success)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-done":
-            if self._completed:
-                from mediascribe.tui.screens.results import ResultsScreen
-                self.app.push_screen(ResultsScreen())
+        if event.button.id == "btn-done" and self._completed:
+            from mediascribe.tui.screens.results import ResultsScreen
+
+            self.app.push_screen(ResultsScreen())

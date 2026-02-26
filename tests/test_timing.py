@@ -9,14 +9,13 @@ Covers:
 """
 
 import pytest
-
 from pysrt import SubRipFile, SubRipItem
 
 from mediascribe.formats.srt import srt_time, srt_to_sec
 from mediascribe.steps.timing import estimate_display_duration, fix_subtitle_timing
 
-
 # ── estimate_display_duration ────────────────────────────────────────────────
+
 
 class TestEstimateDisplayDuration:
     def test_empty_text(self):
@@ -57,6 +56,7 @@ class TestEstimateDisplayDuration:
 
 
 # ── fix_subtitle_timing ──────────────────────────────────────────────────────
+
 
 def _make_sub(index: int, start: float, end: float, text: str) -> SubRipItem:
     return SubRipItem(
@@ -102,10 +102,12 @@ class TestFixSubtitleTiming:
 
     def test_gap_enforcement(self):
         """Subtitles that are too close should have a minimum gap enforced."""
-        srt = _make_srt([
-            (0.0, 2.95, "First"),
-            (3.0, 5.0, "Second"),
-        ])
+        srt = _make_srt(
+            [
+                (0.0, 2.95, "First"),
+                (3.0, 5.0, "Second"),
+            ]
+        )
         fix_subtitle_timing(srt, min_gap=0.15)
 
         first_end = srt_to_sec(srt[0].end)
@@ -119,11 +121,13 @@ class TestFixSubtitleTiming:
         This keeps subtitles on screen 100% of the time with no breaks.
         fix_subtitle_timing should introduce gaps.
         """
-        srt = _make_srt([
-            (0.0, 3.0, "A"),
-            (3.0, 6.0, "B"),
-            (6.0, 9.0, "C"),
-        ])
+        srt = _make_srt(
+            [
+                (0.0, 3.0, "A"),
+                (3.0, 6.0, "B"),
+                (6.0, 9.0, "C"),
+            ]
+        )
         fix_subtitle_timing(srt, min_gap=0.15)
 
         for i in range(len(srt) - 1):
@@ -133,17 +137,15 @@ class TestFixSubtitleTiming:
 
     def test_already_good_timing_unchanged(self):
         """Subtitles with proper gaps and reasonable durations stay the same."""
-        srt = _make_srt([
-            (0.0, 1.5, "Hello everyone"),  # 14 chars → est ~3.6s, actual 1.5 → ok
-            (2.0, 3.5, "How are you"),     # 11 chars → est ~3.0s, actual 1.5 → ok
-        ])
-        original_times = [
-            (srt_to_sec(s.start), srt_to_sec(s.end)) for s in srt
-        ]
+        srt = _make_srt(
+            [
+                (0.0, 1.5, "Hello everyone"),  # 14 chars → est ~3.6s, actual 1.5 → ok
+                (2.0, 3.5, "How are you"),  # 11 chars → est ~3.0s, actual 1.5 → ok
+            ]
+        )
+        original_times = [(srt_to_sec(s.start), srt_to_sec(s.end)) for s in srt]
         fix_subtitle_timing(srt, min_gap=0.15)
-        new_times = [
-            (srt_to_sec(s.start), srt_to_sec(s.end)) for s in srt
-        ]
+        new_times = [(srt_to_sec(s.start), srt_to_sec(s.end)) for s in srt]
         assert original_times == new_times
 
     def test_max_duration_parameter(self):
@@ -155,10 +157,12 @@ class TestFixSubtitleTiming:
 
     def test_gap_doesnt_make_duration_negative(self):
         """If enforcing gap would push end before start, clamp to start+0.5."""
-        srt = _make_srt([
-            (0.0, 0.8, "A"),
-            (0.6, 2.0, "B"),  # starts before A ends
-        ])
+        srt = _make_srt(
+            [
+                (0.0, 0.8, "A"),
+                (0.6, 2.0, "B"),  # starts before A ends
+            ]
+        )
         fix_subtitle_timing(srt, min_gap=0.15)
 
         first_end = srt_to_sec(srt[0].end)

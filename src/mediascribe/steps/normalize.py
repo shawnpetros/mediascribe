@@ -22,7 +22,10 @@ class NormalizeStep(PipelineStep):
     description = "Extracting audio for transcription"
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         if job.media_info.media_type == MediaType.UNKNOWN:
             raise RuntimeError("Cannot normalize: unknown media type. Run detect step first.")
@@ -30,12 +33,14 @@ class NormalizeStep(PipelineStep):
         # Output WAV path: <output_dir>/<stem>.wav
         wav_path = job.output_dir / f"{job.stem}.wav"
 
-        events.emit(PipelineEvent(
-            type=EventType.STEP_PROGRESS,
-            step_name=self.name,
-            message=f"Extracting audio → {wav_path.name}",
-            progress=0.1,
-        ))
+        events.emit(
+            PipelineEvent(
+                type=EventType.STEP_PROGRESS,
+                step_name=self.name,
+                message=f"Extracting audio → {wav_path.name}",
+                progress=0.1,
+            )
+        )
 
         extract_audio(
             input_path=job.input_path,

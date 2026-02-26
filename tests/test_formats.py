@@ -11,15 +11,14 @@ Covers:
 """
 
 import json
-import pytest
 from pathlib import Path
 
 from mediascribe.core.job import Job, MediaInfo, MediaType, Segment
-from mediascribe.formats.vtt import _vtt_timestamp, segments_to_vtt, save_vtt
 from mediascribe.formats.json_export import job_to_json, save_json
-
+from mediascribe.formats.vtt import _vtt_timestamp, save_vtt, segments_to_vtt
 
 # ── VTT Timestamps ──────────────────────────────────────────────────────────
+
 
 class TestVttTimestamp:
     def test_zero(self):
@@ -39,6 +38,7 @@ class TestVttTimestamp:
 
 
 # ── segments_to_vtt ─────────────────────────────────────────────────────────
+
 
 class TestSegmentsToVtt:
     def test_basic_output(self):
@@ -63,8 +63,7 @@ class TestSegmentsToVtt:
 
     def test_translation_mode(self):
         segs = [
-            Segment(index=1, start=0.0, end=2.0, text="こんにちは",
-                    translation="Hello"),
+            Segment(index=1, start=0.0, end=2.0, text="こんにちは", translation="Hello"),
         ]
         vtt = segments_to_vtt(segs, use_translation=True)
         assert "Hello" in vtt
@@ -89,6 +88,7 @@ class TestSaveVtt:
 
 # ── JSON Export ──────────────────────────────────────────────────────────────
 
+
 def _make_job(tmp_path: Path) -> Job:
     f = tmp_path / "video.mp4"
     f.touch()
@@ -99,10 +99,10 @@ def _make_job(tmp_path: Path) -> Job:
         language="ja",
     )
     job.segments = [
-        Segment(index=1, start=0.0, end=2.0, text="こんにちは",
-                translation="Hello", confidence=0.95),
-        Segment(index=2, start=3.0, end=5.0, text="世界",
-                translation="World", speaker="Speaker 1"),
+        Segment(
+            index=1, start=0.0, end=2.0, text="こんにちは", translation="Hello", confidence=0.95
+        ),
+        Segment(index=2, start=3.0, end=5.0, text="世界", translation="World", speaker="Speaker 1"),
     ]
     return job
 

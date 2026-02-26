@@ -20,7 +20,9 @@ from mediascribe.core.job import Job
 from mediascribe.steps.base import PipelineStep, StepResult
 
 
-def _find_speaker(seg_start: float, seg_end: float, turns: list[tuple[float, float, str]]) -> str | None:
+def _find_speaker(
+    seg_start: float, seg_end: float, turns: list[tuple[float, float, str]]
+) -> str | None:
     """Find the speaker with the most temporal overlap for a segment."""
     best_speaker: str | None = None
     best_overlap = 0.0
@@ -52,14 +54,16 @@ class DiarizeStep(PipelineStep):
     required = False
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         try:
             from pyannote.audio import Pipeline as PyannotePipeline
         except ImportError:
             events.warn(
-                "pyannote.audio not installed — install with: "
-                "pip install mediascribe[diarize]",
+                "pyannote.audio not installed — install with: pip install mediascribe[diarize]",
                 step=self.name,
             )
             return StepResult(data={"skipped": True, "reason": "pyannote not installed"})
@@ -121,12 +125,14 @@ class DiarizeStep(PipelineStep):
             step=self.name,
         )
 
-        return StepResult(data={
-            "speakers": sorted(speaker_set),
-            "speaker_count": len(speaker_set),
-            "turn_count": len(turns),
-            "labeled_segments": labeled_count,
-        })
+        return StepResult(
+            data={
+                "speakers": sorted(speaker_set),
+                "speaker_count": len(speaker_set),
+                "turn_count": len(turns),
+                "labeled_segments": labeled_count,
+            }
+        )
 
     def can_skip(self, job: Job) -> bool:
         return all(seg.speaker is not None for seg in job.segments) if job.segments else False

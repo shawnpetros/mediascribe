@@ -14,9 +14,9 @@ from pathlib import Path
 def probe_duration(path: Path) -> float:
     """Get audio/video duration in seconds via ffprobe."""
     r = subprocess.run(
-        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-         "-of", "csv=p=0", str(path)],
-        capture_output=True, text=True,
+        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+        capture_output=True,
+        text=True,
     )
     return float(r.stdout.strip())
 
@@ -24,9 +24,13 @@ def probe_duration(path: Path) -> float:
 def probe_json(path: Path) -> dict:
     """Get full ffprobe JSON output for a file."""
     cmd = [
-        "ffprobe", "-v", "quiet",
-        "-print_format", "json",
-        "-show_format", "-show_streams",
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_format",
+        "-show_streams",
         str(path),
     ]
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -41,11 +45,16 @@ def extract_audio(
 ) -> None:
     """Extract audio from a media file as WAV."""
     cmd = [
-        "ffmpeg", "-y", "-nostdin",
-        "-i", str(input_path),
+        "ffmpeg",
+        "-y",
+        "-nostdin",
+        "-i",
+        str(input_path),
         "-vn",
-        "-ac", str(channels),
-        "-ar", str(sample_rate),
+        "-ac",
+        str(channels),
+        "-ar",
+        str(sample_rate),
         str(output_path),
     ]
     r = subprocess.run(cmd, capture_output=True)
@@ -90,11 +99,19 @@ def split_audio(
         chunk_path = output_dir / f"chunk_{idx:03d}.wav"
         if not chunk_path.exists():
             cmd = [
-                "ffmpeg", "-y", "-nostdin",
-                "-i", str(input_path),
-                "-ss", str(offset),
-                "-t", str(actual_duration),
-                "-ac", "1", "-ar", "16000",
+                "ffmpeg",
+                "-y",
+                "-nostdin",
+                "-i",
+                str(input_path),
+                "-ss",
+                str(offset),
+                "-t",
+                str(actual_duration),
+                "-ac",
+                "1",
+                "-ar",
+                "16000",
                 str(chunk_path),
             ]
             subprocess.run(cmd, capture_output=True)
@@ -111,9 +128,15 @@ def split_audio(
 def convert_to_mp3(input_path: Path, output_path: Path, bitrate: str = "64k") -> None:
     """Convert audio to mp3 (e.g., for API upload size reduction)."""
     cmd = [
-        "ffmpeg", "-y", "-nostdin",
-        "-i", str(input_path),
-        "-codec:a", "libmp3lame", "-b:a", bitrate,
+        "ffmpeg",
+        "-y",
+        "-nostdin",
+        "-i",
+        str(input_path),
+        "-codec:a",
+        "libmp3lame",
+        "-b:a",
+        bitrate,
         str(output_path),
     ]
     r = subprocess.run(cmd, capture_output=True)

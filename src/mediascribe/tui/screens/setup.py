@@ -61,6 +61,7 @@ class SetupScreen(Screen):
 
     def on_mount(self) -> None:
         from mediascribe.core.config import MediascribeSettings
+
         try:
             settings = MediascribeSettings()
             if settings.openai_api_key:
@@ -83,6 +84,7 @@ class SetupScreen(Screen):
 
         if openai_key and openai_key != "***configured***":
             from mediascribe.core.config import _default_config_dir
+
             config_dir = _default_config_dir()
             config_dir.mkdir(parents=True, exist_ok=True)
             config_file = config_dir / "config.toml"
@@ -90,8 +92,9 @@ class SetupScreen(Screen):
             lines: list[str] = []
             if config_file.exists():
                 for line in config_file.read_text().splitlines():
-                    if not line.strip().startswith("openai_api_key") and \
-                       not line.strip().startswith("huggingface_token"):
+                    if not line.strip().startswith(
+                        "openai_api_key"
+                    ) and not line.strip().startswith("huggingface_token"):
                         lines.append(line)
 
             lines.append(f'openai_api_key = "{openai_key}"')

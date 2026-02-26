@@ -10,7 +10,6 @@ Produces a draft translation SRT with the same timing as the source.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from pysrt import SubRipFile, SubRipItem
 
@@ -21,7 +20,6 @@ from mediascribe.formats.srt import read_srt, save_srt
 from mediascribe.models.openai_client import call_openai_json, get_client
 from mediascribe.models.prompts import TEMPLATES, render_prompt
 from mediascribe.steps.base import PipelineStep, StepResult
-
 
 # ── Translation Logic ────────────────────────────────────────────────────────
 
@@ -57,16 +55,18 @@ def translate_subtitles(
     total_batches = max(1, (len(items) + step - 1) // step)
 
     for batch_num, start in enumerate(range(0, len(items), step), 1):
-        batch = items[start: start + batch_size]
+        batch = items[start : start + batch_size]
         id_range = f"{batch[0]['id']}–{batch[-1]['id']}"
 
         if events:
-            events.emit(PipelineEvent(
-                type=EventType.STEP_PROGRESS,
-                step_name="translate",
-                message=f"Batch {batch_num}/{total_batches} (subs {id_range})",
-                progress=batch_num / total_batches,
-            ))
+            events.emit(
+                PipelineEvent(
+                    type=EventType.STEP_PROGRESS,
+                    step_name="translate",
+                    message=f"Batch {batch_num}/{total_batches} (subs {id_range})",
+                    progress=batch_num / total_batches,
+                )
+            )
 
         try:
             result = call_openai_json(client, model, system_prompt, batch)
@@ -93,12 +93,14 @@ def build_translated_srt(source_srt: SubRipFile, translations: dict[int, str]) -
     """Build a translated SRT using source timing and translated text."""
     out = SubRipFile()
     for i, sub in enumerate(source_srt):
-        out.append(SubRipItem(
-            index=i + 1,
-            start=sub.start,
-            end=sub.end,
-            text=translations.get(i + 1, sub.text),
-        ))
+        out.append(
+            SubRipItem(
+                index=i + 1,
+                start=sub.start,
+                end=sub.end,
+                text=translations.get(i + 1, sub.text),
+            )
+        )
     return out
 
 
@@ -118,7 +120,10 @@ class TranslateStep(PipelineStep):
     description = "Translating subtitles"
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         if not settings.target_language:
             events.log("No target language set — skipping translation", step=self.name)
@@ -129,8 +134,11 @@ class TranslateStep(PipelineStep):
         source_srt_path = job.output_dir / f"{job.stem}_{source_lang}.srt"
         if not source_srt_path.exists():
             # Try to find any source SRT
-            candidates = [p for p in job.output_dir.glob(f"{job.stem}_*.srt")
-                          if "_en" not in p.stem and "_draft" not in p.stem]
+            candidates = [
+                p
+                for p in job.output_dir.glob(f"{job.stem}_*.srt")
+                if "_en" not in p.stem and "_draft" not in p.stem
+            ]
             if candidates:
                 source_srt_path = candidates[0]
             else:
@@ -141,7 +149,9 @@ class TranslateStep(PipelineStep):
 
         template = TEMPLATES.get(settings.profile, TEMPLATES["general"])
         system_prompt, _ = render_prompt(
-            template, target, settings.custom_instructions,
+            template,
+            target,
+            settings.custom_instructions,
         )
 
         events.log(f"Model: {settings.translation_model}", step=self.name)
@@ -171,13 +181,15 @@ class TranslateStep(PipelineStep):
             step=self.name,
         )
 
-        return StepResult(data={
-            "draft_path": str(draft_path),
-            "translated_count": len(translations),
-        })
+        return StepResult(
+            data={
+                "draft_path": str(draft_path),
+                "translated_count": len(translations),
+            }
+        )
 
     def can_skip(self, job: Job) -> bool:
         """Skip if draft translation SRT already exists."""
-        for p in job.output_dir.glob(f"{job.stem}_*_draft.srt"):
+        for _p in job.output_dir.glob(f"{job.stem}_*_draft.srt"):
             return True
         return False

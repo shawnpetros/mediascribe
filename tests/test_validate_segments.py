@@ -9,18 +9,17 @@ Covers:
 - Edge cases around thresholds
 """
 
-import pytest
-
 from mediascribe.steps.transcribe import validate_segments
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _seg(text: str, start: float = 0.0, end: float = 1.0) -> dict:
     return {"text": text, "start": start, "end": end}
 
 
 # ── Short segment lists always pass ──────────────────────────────────────────
+
 
 class TestShortLists:
     def test_empty_list(self):
@@ -40,6 +39,7 @@ class TestShortLists:
 
 # ── Clean segments pass ──────────────────────────────────────────────────────
 
+
 class TestCleanSegments:
     def test_varied_text_passes(self):
         segs = [_seg(f"Line {i}") for i in range(20)]
@@ -56,14 +56,21 @@ class TestCleanSegments:
     def test_dominant_below_threshold(self):
         # 7 segments, "repeat me" appears 2 times = 28% < 35%
         # (use longer text to avoid triggering short-avg check)
-        segs = [_seg("repeat me"), _seg("some text"), _seg("repeat me"),
-                _seg("another line"), _seg("more stuff"),
-                _seg("even more"), _seg("last one")]
+        segs = [
+            _seg("repeat me"),
+            _seg("some text"),
+            _seg("repeat me"),
+            _seg("another line"),
+            _seg("more stuff"),
+            _seg("even more"),
+            _seg("last one"),
+        ]
         ok, _ = validate_segments(segs)
         assert ok is True
 
 
 # ── Consecutive repeat loop detection ────────────────────────────────────────
+
 
 class TestLoopDetection:
     def test_four_consecutive_repeats_fails(self):
@@ -87,14 +94,22 @@ class TestLoopDetection:
 
 # ── Dominant text detection ──────────────────────────────────────────────────
 
+
 class TestDominantDetection:
     def test_dominant_text_fails(self):
         # 10 segments, "ugh" appears 4 times = 40% > 35%
         # Interleave to avoid triggering loop detection first
         segs = [
-            _seg("ugh"), _seg("line1"), _seg("ugh"), _seg("line2"),
-            _seg("ugh"), _seg("line3"), _seg("ugh"), _seg("line4"),
-            _seg("line5"), _seg("line6"),
+            _seg("ugh"),
+            _seg("line1"),
+            _seg("ugh"),
+            _seg("line2"),
+            _seg("ugh"),
+            _seg("line3"),
+            _seg("ugh"),
+            _seg("line4"),
+            _seg("line5"),
+            _seg("line6"),
         ]
         ok, reason = validate_segments(segs)
         assert ok is False
@@ -111,14 +126,17 @@ class TestDominantDetection:
         # 6 or fewer segments → dominant check is skipped (requires > 6)
         # Use different texts to avoid loop detection, longer to avoid short-avg
         segs = [_seg("hello world")] * 2 + [
-            _seg("other text"), _seg("more words"),
-            _seg("something"), _seg("final line"),
+            _seg("other text"),
+            _seg("more words"),
+            _seg("something"),
+            _seg("final line"),
         ]
         ok, _ = validate_segments(segs)
         assert ok is True
 
 
 # ── Short average text detection ─────────────────────────────────────────────
+
 
 class TestShortAvgText:
     def test_very_short_avg_fails(self):

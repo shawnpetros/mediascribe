@@ -87,6 +87,7 @@ class WelcomeScreen(Screen):
             lines.append("[red]!!![/red]  ffprobe not found — required for media detection")
 
         from mediascribe.core.config import MediascribeSettings
+
         try:
             settings = MediascribeSettings()
             if settings.openai_api_key:
@@ -103,6 +104,7 @@ class WelcomeScreen(Screen):
 
         try:
             from mediascribe.core.hardware import detect_hardware
+
             hw = detect_hardware()
             lines.append(f"[dim]    CPU: {hw.cpu_count} cores, RAM: {hw.ram_gb:.1f} GB[/dim]")
             if hw.gpu_name:
@@ -115,9 +117,11 @@ class WelcomeScreen(Screen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-start":
             from mediascribe.tui.screens.picker import PickerScreen
+
             self.app.push_screen(PickerScreen())
         elif event.button.id == "btn-setup":
             from mediascribe.tui.screens.setup import SetupScreen
+
             self.app.push_screen(SetupScreen())
         elif event.button.id == "btn-quit":
             self.app.exit()

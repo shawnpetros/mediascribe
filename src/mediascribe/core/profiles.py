@@ -101,8 +101,13 @@ def _parse_toml_profile(name: str, data: dict[str, Any]) -> Profile:
                     overrides[settings_key] = data[section][toml_key]
 
     # Top-level keys that map directly
-    for key in ("source_language", "target_language", "custom_instructions",
-                "max_concurrency", "profile"):
+    for key in (
+        "source_language",
+        "target_language",
+        "custom_instructions",
+        "max_concurrency",
+        "profile",
+    ):
         if key in data:
             overrides[key] = data[key]
 
@@ -126,6 +131,7 @@ def load_profile(name: str, config_dir: Path | None = None) -> Profile:
     """
     if config_dir is None:
         from mediascribe.core.config import _default_config_dir
+
         config_dir = _default_config_dir()
 
     # Check user profiles directory
@@ -156,6 +162,7 @@ def list_profiles(config_dir: Path | None = None) -> list[str]:
 
     if config_dir is None:
         from mediascribe.core.config import _default_config_dir
+
         config_dir = _default_config_dir()
 
     profiles_dir = config_dir / "profiles"
@@ -173,59 +180,59 @@ def save_builtin_profiles(config_dir: Path) -> None:
 
     profile_tomls = {
         "anime": (
-            '# Anime subtitling profile\n'
+            "# Anime subtitling profile\n"
             'description = "Anime/animation subtitling with character-aware translation"\n'
-            '\n'
-            '[transcription]\n'
+            "\n"
+            "[transcription]\n"
             'mode = "local"\n'
             'model = "large-v3"\n'
-            'chunk_duration = 180\n'
-            '\n'
-            '[translation]\n'
+            "chunk_duration = 180\n"
+            "\n"
+            "[translation]\n"
             'model = "gpt-4.1"\n'
-            'enable_review = true\n'
+            "enable_review = true\n"
             'custom_instructions = """\n'
-            'Preserve character catchphrases and verbal tics.\n'
-            'Keep humor punchy and age-appropriate.\n'
+            "Preserve character catchphrases and verbal tics.\n"
+            "Keep humor punchy and age-appropriate.\n"
             '"""\n'
-            '\n'
-            '[output]\n'
+            "\n"
+            "[output]\n"
             'formats = ["srt", "vtt"]\n'
         ),
         "podcast": (
-            '# Podcast transcription profile\n'
+            "# Podcast transcription profile\n"
             'description = "Podcast/interview transcription with speaker awareness"\n'
-            '\n'
-            '[transcription]\n'
+            "\n"
+            "[transcription]\n"
             'mode = "auto"\n'
             'model = "large-v3"\n'
-            '\n'
-            '[translation]\n'
-            'enable_review = true\n'
+            "\n"
+            "[translation]\n"
+            "enable_review = true\n"
             'custom_instructions = """\n'
-            'Preserve speaker tone and conversational style.\n'
-            'Translate idioms naturally.\n'
+            "Preserve speaker tone and conversational style.\n"
+            "Translate idioms naturally.\n"
             '"""\n'
-            '\n'
-            '[output]\n'
+            "\n"
+            "[output]\n"
             'formats = ["srt", "txt"]\n'
         ),
         "meeting": (
-            '# Meeting transcription profile\n'
+            "# Meeting transcription profile\n"
             'description = "Meeting/recording transcription with action item awareness"\n'
-            '\n'
-            '[transcription]\n'
+            "\n"
+            "[transcription]\n"
             'mode = "auto"\n'
             'model = "large-v3"\n'
-            '\n'
-            '[translation]\n'
-            'enable_review = true\n'
+            "\n"
+            "[translation]\n"
+            "enable_review = true\n"
             'custom_instructions = """\n'
-            'Preserve technical terminology accurately.\n'
-            'Keep action items and decisions clearly translated.\n'
+            "Preserve technical terminology accurately.\n"
+            "Keep action items and decisions clearly translated.\n"
             '"""\n'
-            '\n'
-            '[output]\n'
+            "\n"
+            "[output]\n"
             'formats = ["srt", "txt", "json"]\n'
         ),
     }

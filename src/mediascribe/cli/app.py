@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -41,7 +41,7 @@ def version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option("--version", "-V", callback=version_callback, is_eager=True),
     ] = None,
 ) -> None:
@@ -54,18 +54,45 @@ def main(
 @app.command()
 def transcribe(
     file: Annotated[Path, typer.Argument(help="Input audio or video file")],
-    lang: Annotated[str, typer.Option("--lang", "-l", help="Source language code (e.g., ja, en, es). Auto-detect if omitted")] = "",
-    translate: Annotated[str, typer.Option("--translate", "-t", help="Target language for translation (e.g., en)")] = "",
-    profile: Annotated[str, typer.Option("--profile", "-p", help="Prompt profile: general, anime, podcast, meeting")] = "general",
+    lang: Annotated[
+        str,
+        typer.Option(
+            "--lang", "-l", help="Source language code (e.g., ja, en, es). Auto-detect if omitted"
+        ),
+    ] = "",
+    translate: Annotated[
+        str, typer.Option("--translate", "-t", help="Target language for translation (e.g., en)")
+    ] = "",
+    profile: Annotated[
+        str,
+        typer.Option("--profile", "-p", help="Prompt profile: general, anime, podcast, meeting"),
+    ] = "general",
     model: Annotated[str, typer.Option("--model", "-m", help="Translation model")] = "gpt-4.1",
-    whisper_model: Annotated[str, typer.Option("--whisper-model", help="Whisper model size")] = "large-v3",
-    mode: Annotated[str, typer.Option("--mode", help="Transcription mode: local, api, auto")] = "auto",
-    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory")] = Path("./output"),
-    custom: Annotated[str, typer.Option("--custom", help="Custom instructions for translation")] = "",
-    no_review: Annotated[bool, typer.Option("--no-review", help="Skip the review (second) pass")] = False,
-    formats: Annotated[str, typer.Option("--formats", "-f", help="Output formats (comma-separated): srt,vtt,txt,json")] = "srt",
-    diarize: Annotated[bool, typer.Option("--diarize", help="Enable speaker diarization (requires pyannote.audio)")] = False,
-    analyze: Annotated[bool, typer.Option("--analyze", help="Enable AI analysis (summary, topics, action items)")] = False,
+    whisper_model: Annotated[
+        str, typer.Option("--whisper-model", help="Whisper model size")
+    ] = "large-v3",
+    mode: Annotated[
+        str, typer.Option("--mode", help="Transcription mode: local, api, auto")
+    ] = "auto",
+    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory")] = Path(
+        "./output"
+    ),
+    custom: Annotated[
+        str, typer.Option("--custom", help="Custom instructions for translation")
+    ] = "",
+    no_review: Annotated[
+        bool, typer.Option("--no-review", help="Skip the review (second) pass")
+    ] = False,
+    formats: Annotated[
+        str,
+        typer.Option("--formats", "-f", help="Output formats (comma-separated): srt,vtt,txt,json"),
+    ] = "srt",
+    diarize: Annotated[
+        bool, typer.Option("--diarize", help="Enable speaker diarization (requires pyannote.audio)")
+    ] = False,
+    analyze: Annotated[
+        bool, typer.Option("--analyze", help="Enable AI analysis (summary, topics, action items)")
+    ] = False,
 ) -> None:
     """Transcribe (and optionally translate) a single file."""
     from mediascribe.cli.output import run_pipeline_for_file
@@ -106,7 +133,9 @@ def batch(
     output: Annotated[Path, typer.Option("--output", "-o")] = Path("./output"),
     custom: Annotated[str, typer.Option("--custom")] = "",
     no_review: Annotated[bool, typer.Option("--no-review")] = False,
-    formats: Annotated[str, typer.Option("--formats", "-f", help="Output formats: srt,vtt,txt,json")] = "srt",
+    formats: Annotated[
+        str, typer.Option("--formats", "-f", help="Output formats: srt,vtt,txt,json")
+    ] = "srt",
     diarize: Annotated[bool, typer.Option("--diarize", help="Enable speaker diarization")] = False,
     analyze: Annotated[bool, typer.Option("--analyze", help="Enable AI analysis")] = False,
 ) -> None:
@@ -118,8 +147,19 @@ def batch(
         raise typer.Exit(1)
 
     # Find all media files
-    extensions = {".mp4", ".mkv", ".webm", ".avi", ".mov",
-                  ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac"}
+    extensions = {
+        ".mp4",
+        ".mkv",
+        ".webm",
+        ".avi",
+        ".mov",
+        ".mp3",
+        ".wav",
+        ".m4a",
+        ".flac",
+        ".ogg",
+        ".aac",
+    }
     files = sorted(f for f in folder.iterdir() if f.suffix.lower() in extensions)
 
     if not files:
@@ -158,12 +198,23 @@ def batch(
 @app.command()
 def translate(
     srt_file: Annotated[Path, typer.Argument(help="Input SRT file to translate")],
-    target: Annotated[str, typer.Option("--target", "-t", help="Target language (e.g., en, es, fr)")] = "en",
-    profile: Annotated[str, typer.Option("--profile", "-p", help="Prompt profile: general, anime, podcast, meeting")] = "general",
+    target: Annotated[
+        str, typer.Option("--target", "-t", help="Target language (e.g., en, es, fr)")
+    ] = "en",
+    profile: Annotated[
+        str,
+        typer.Option("--profile", "-p", help="Prompt profile: general, anime, podcast, meeting"),
+    ] = "general",
     model: Annotated[str, typer.Option("--model", "-m", help="Translation model")] = "gpt-4.1",
-    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory")] = Path("./output"),
-    custom: Annotated[str, typer.Option("--custom", help="Custom instructions for translation")] = "",
-    no_review: Annotated[bool, typer.Option("--no-review", help="Skip the review (second) pass")] = False,
+    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory")] = Path(
+        "./output"
+    ),
+    custom: Annotated[
+        str, typer.Option("--custom", help="Custom instructions for translation")
+    ] = "",
+    no_review: Annotated[
+        bool, typer.Option("--no-review", help="Skip the review (second) pass")
+    ] = False,
 ) -> None:
     """Translate an existing SRT file without re-transcribing."""
     from mediascribe.cli.output import run_translate_srt
@@ -250,7 +301,9 @@ def config_path() -> None:
 
 @config_app.command("set")
 def config_set(
-    key: Annotated[str, typer.Argument(help="Config key (e.g., openai_api_key, profile, translation_model)")],
+    key: Annotated[
+        str, typer.Argument(help="Config key (e.g., openai_api_key, profile, translation_model)")
+    ],
     value: Annotated[str, typer.Argument(help="Value to set")],
 ) -> None:
     """Set a configuration value in config.toml."""
@@ -298,9 +351,9 @@ def config_init() -> None:
         console.print(f"  [yellow]Config already exists:[/yellow] {config_file}")
     else:
         config_file.write_text(
-            '# mediascribe configuration\n'
-            '# See: mediascribe config show\n'
-            '\n'
+            "# mediascribe configuration\n"
+            "# See: mediascribe config show\n"
+            "\n"
             '# openai_api_key = "sk-..."\n'
             '# profile = "general"\n'
             '# transcription_mode = "auto"\n'
@@ -344,6 +397,7 @@ def tui() -> None:
     """Launch the interactive TUI."""
     try:
         from mediascribe.tui.app import run_tui
+
         run_tui()
     except ImportError:
         console.print("[red]TUI requires the 'tui' extra:[/red]")

@@ -32,8 +32,11 @@ def get_model(
     cache_key = f"{model_name}:{device}:{compute_type}"
     if cache_key not in _model_cache:
         from faster_whisper import WhisperModel
+
         _model_cache[cache_key] = WhisperModel(
-            model_name, device=device, compute_type=compute_type,
+            model_name,
+            device=device,
+            compute_type=compute_type,
         )
     return _model_cache[cache_key]
 

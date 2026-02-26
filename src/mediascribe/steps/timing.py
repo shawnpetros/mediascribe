@@ -19,7 +19,6 @@ from mediascribe.core.job import Job
 from mediascribe.formats.srt import srt_time, srt_to_sec
 from mediascribe.steps.base import PipelineStep, StepResult
 
-
 # ── Timing Logic (usable standalone, outside of step) ────────────────────────
 
 
@@ -98,7 +97,10 @@ class TimingStep(PipelineStep):
     description = "Optimizing subtitle display timing"
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         srt_path = job.output_dir / f"{job.stem}_ja.srt"
         if not srt_path.exists():

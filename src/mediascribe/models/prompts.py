@@ -177,7 +177,9 @@ TEMPLATES: dict[str, PromptTemplate] = {
 }
 
 
-def render_prompt(template: PromptTemplate, target_language: str, custom_instructions: str = "") -> tuple[str, str]:
+def render_prompt(
+    template: PromptTemplate, target_language: str, custom_instructions: str = ""
+) -> tuple[str, str]:
     """Render a template with target language and custom instructions.
 
     Returns (system_translate, system_review) prompt strings.

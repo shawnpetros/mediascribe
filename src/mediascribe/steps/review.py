@@ -9,7 +9,6 @@ This is the final quality gate before output.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from pysrt import SubRipFile, SubRipItem
 
@@ -20,7 +19,6 @@ from mediascribe.formats.srt import read_srt, save_srt
 from mediascribe.models.openai_client import call_openai_json, get_client
 from mediascribe.models.prompts import TEMPLATES, render_prompt
 from mediascribe.steps.base import PipelineStep, StepResult
-
 
 # ── Review Logic ─────────────────────────────────────────────────────────────
 
@@ -68,16 +66,18 @@ def review_translations(
     total_batches = max(1, (len(pairs) + batch_size - 1) // batch_size)
 
     for batch_num, start in enumerate(range(0, len(pairs), batch_size), 1):
-        batch = pairs[start: start + batch_size]
+        batch = pairs[start : start + batch_size]
         id_range = f"{batch[0]['id']}–{batch[-1]['id']}"
 
         if events:
-            events.emit(PipelineEvent(
-                type=EventType.STEP_PROGRESS,
-                step_name="review",
-                message=f"Reviewing {batch_num}/{total_batches} (subs {id_range})",
-                progress=batch_num / total_batches,
-            ))
+            events.emit(
+                PipelineEvent(
+                    type=EventType.STEP_PROGRESS,
+                    step_name="review",
+                    message=f"Reviewing {batch_num}/{total_batches} (subs {id_range})",
+                    progress=batch_num / total_batches,
+                )
+            )
 
         try:
             result = call_openai_json(client, model, review_prompt, batch, temp=0.2)
@@ -85,7 +85,7 @@ def review_translations(
                 reviewed[item["id"]] = item["text"]
         except (json.JSONDecodeError, KeyError):
             if events:
-                events.warn(f"Parse error in review batch — keeping drafts", step="review")
+                events.warn("Parse error in review batch — keeping drafts", step="review")
             for item in batch:
                 reviewed[item["id"]] = item["en"]
 
@@ -108,7 +108,10 @@ class ReviewStep(PipelineStep):
     description = "Reviewing translation quality"
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         if not settings.target_language:
             events.log("No target language — skipping review", step=self.name)
@@ -127,8 +130,11 @@ class ReviewStep(PipelineStep):
         final_path = job.output_dir / f"{job.stem}_{target}.srt"
 
         if not source_srt_path.exists():
-            candidates = [p for p in job.output_dir.glob(f"{job.stem}_*.srt")
-                          if "_en" not in p.stem and "_draft" not in p.stem]
+            candidates = [
+                p
+                for p in job.output_dir.glob(f"{job.stem}_*.srt")
+                if "_en" not in p.stem and "_draft" not in p.stem
+            ]
             if candidates:
                 source_srt_path = candidates[0]
             else:
@@ -139,7 +145,9 @@ class ReviewStep(PipelineStep):
 
         template = TEMPLATES.get(settings.profile, TEMPLATES["general"])
         _, review_prompt = render_prompt(
-            template, target, settings.custom_instructions,
+            template,
+            target,
+            settings.custom_instructions,
         )
 
         events.log(f"Model: {settings.translation_model}", step=self.name)
@@ -161,12 +169,14 @@ class ReviewStep(PipelineStep):
         final_srt = SubRipFile()
         for i, sub in enumerate(source_srt):
             text = reviewed.get(i + 1, draft_srt[i].text if i < len(draft_srt) else "")
-            final_srt.append(SubRipItem(
-                index=i + 1,
-                start=sub.start,
-                end=sub.end,
-                text=text,
-            ))
+            final_srt.append(
+                SubRipItem(
+                    index=i + 1,
+                    start=sub.start,
+                    end=sub.end,
+                    text=text,
+                )
+            )
 
         save_srt(final_srt, final_path)
 
@@ -180,17 +190,22 @@ class ReviewStep(PipelineStep):
             step=self.name,
         )
 
-        return StepResult(data={
-            "final_path": str(final_path),
-            "reviewed_count": len(reviewed),
-        })
+        return StepResult(
+            data={
+                "final_path": str(final_path),
+                "reviewed_count": len(reviewed),
+            }
+        )
 
     def can_skip(self, job: Job) -> bool:
         """Skip if final (non-draft) translation SRT exists."""
-        if not hasattr(job, '_settings_cache'):
+        if not hasattr(job, "_settings_cache"):
             return False
         # Look for final SRT (not draft)
         for p in job.output_dir.glob(f"{job.stem}_*.srt"):
-            if "_draft" not in p.stem and p.stem != f"{job.stem}_{job.media_info.language or 'unknown'}":
+            if (
+                "_draft" not in p.stem
+                and p.stem != f"{job.stem}_{job.media_info.language or 'unknown'}"
+            ):
                 return True
         return False

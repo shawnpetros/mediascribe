@@ -85,6 +85,7 @@ def run_pipeline_for_file(
     This is the main entry point called by CLI commands.
     """
     from dotenv import load_dotenv
+
     load_dotenv()
 
     # Build settings

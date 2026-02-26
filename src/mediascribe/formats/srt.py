@@ -12,7 +12,6 @@ from pysrt import SubRipFile, SubRipItem, SubRipTime
 
 from mediascribe.core.job import Segment
 
-
 # ── Time Conversion ──────────────────────────────────────────────────────────
 
 
@@ -53,12 +52,14 @@ def segments_to_srt(segments: list[Segment], use_translation: bool = False) -> S
         text = (seg.translation if use_translation and seg.translation else seg.text).strip()
         if not text:
             continue
-        srt.append(SubRipItem(
-            index=i,
-            start=srt_time(seg.start),
-            end=srt_time(seg.end),
-            text=text,
-        ))
+        srt.append(
+            SubRipItem(
+                index=i,
+                start=srt_time(seg.start),
+                end=srt_time(seg.end),
+                text=text,
+            )
+        )
     return srt
 
 
@@ -72,12 +73,14 @@ def dicts_to_srt(segments: list[dict]) -> SubRipFile:
         text = s["text"].strip()
         if not text:
             continue
-        srt.append(SubRipItem(
-            index=i,
-            start=srt_time(s["start"]),
-            end=srt_time(s["end"]),
-            text=text,
-        ))
+        srt.append(
+            SubRipItem(
+                index=i,
+                start=srt_time(s["start"]),
+                end=srt_time(s["end"]),
+                text=text,
+            )
+        )
     return srt
 
 
@@ -94,12 +97,14 @@ def srt_to_segments(path: Path) -> list[Segment]:
     subs = read_srt(path)
     segments = []
     for sub in subs:
-        segments.append(Segment(
-            index=sub.index,
-            start=srt_to_sec(sub.start),
-            end=srt_to_sec(sub.end),
-            text=sub.text.strip(),
-        ))
+        segments.append(
+            Segment(
+                index=sub.index,
+                start=srt_to_sec(sub.start),
+                end=srt_to_sec(sub.end),
+                text=sub.text.strip(),
+            )
+        )
     return segments
 
 

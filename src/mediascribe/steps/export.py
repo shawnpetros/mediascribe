@@ -12,7 +12,7 @@ from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.events import EventBus
 from mediascribe.core.job import Job
 from mediascribe.formats.json_export import save_json
-from mediascribe.formats.srt import segments_to_srt, save_srt
+from mediascribe.formats.srt import save_srt, segments_to_srt
 from mediascribe.formats.transcript import save_transcript
 from mediascribe.formats.vtt import save_vtt
 from mediascribe.steps.base import PipelineStep, StepResult
@@ -37,7 +37,10 @@ class ExportStep(PipelineStep):
     description = "Exporting output files"
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         formats = settings.output_formats
         has_translation = settings.target_language is not None
@@ -52,7 +55,11 @@ class ExportStep(PipelineStep):
 
             try:
                 path = self._write_format(
-                    fmt, job, settings, lang_suffix, has_translation,
+                    fmt,
+                    job,
+                    settings,
+                    lang_suffix,
+                    has_translation,
                 )
                 written.append(path.name)
                 events.log(f"Wrote {path.name}", step=self.name)
@@ -86,7 +93,8 @@ class ExportStep(PipelineStep):
         if fmt == "txt":
             path = job.output_dir / f"{stem}_{lang_suffix}.txt"
             save_transcript(
-                job.segments, path,
+                job.segments,
+                path,
                 use_translation=has_translation,
                 include_timestamps=True,
                 include_speakers=True,

@@ -8,8 +8,6 @@ Covers:
 - Normal segments pass through
 """
 
-import pytest
-
 from mediascribe.steps.transcribe import _clean_segments
 
 

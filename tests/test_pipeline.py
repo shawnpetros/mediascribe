@@ -9,9 +9,7 @@ Covers:
 - EventBus subscription and delivery
 """
 
-import pytest
 from pathlib import Path
-from dataclasses import dataclass
 
 from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.events import EventBus, EventType, PipelineEvent
@@ -19,8 +17,8 @@ from mediascribe.core.job import Job, JobStatus
 from mediascribe.core.pipeline import Pipeline
 from mediascribe.steps.base import PipelineStep, StepResult
 
-
 # ── Mock Steps ───────────────────────────────────────────────────────────────
+
 
 class RecordingStep(PipelineStep):
     """A step that records it was called."""
@@ -64,6 +62,7 @@ class StateWritingStep(PipelineStep):
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _make_job(tmp_path: Path) -> Job:
     f = tmp_path / "test.mp4"
     f.touch()
@@ -80,6 +79,7 @@ def _make_pipeline(tmp_path: Path) -> tuple[Pipeline, EventBus, list[PipelineEve
 
 
 # ── Tests ────────────────────────────────────────────────────────────────────
+
 
 class TestStepExecution:
     def test_steps_execute_in_order(self, tmp_path: Path):
@@ -240,8 +240,10 @@ class TestEventEmission:
 
         step_types = [e.type for e in log if "step" in e.type.value]
         assert step_types == [
-            EventType.STEP_START, EventType.STEP_COMPLETE,
-            EventType.STEP_START, EventType.STEP_COMPLETE,
+            EventType.STEP_START,
+            EventType.STEP_COMPLETE,
+            EventType.STEP_START,
+            EventType.STEP_COMPLETE,
         ]
 
 

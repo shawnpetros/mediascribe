@@ -10,8 +10,17 @@ from textual.screen import Screen
 from textual.widgets import Button, DirectoryTree, Label, Static
 
 MEDIA_EXTENSIONS = {
-    ".mp4", ".mkv", ".webm", ".avi", ".mov",
-    ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac",
+    ".mp4",
+    ".mkv",
+    ".webm",
+    ".avi",
+    ".mov",
+    ".mp3",
+    ".wav",
+    ".m4a",
+    ".flac",
+    ".ogg",
+    ".aac",
 }
 
 
@@ -19,10 +28,7 @@ class MediaDirectoryTree(DirectoryTree):
     """Directory tree filtered to show only media files and directories."""
 
     def filter_paths(self, paths: list[Path]) -> list[Path]:
-        return [
-            p for p in paths
-            if p.is_dir() or p.suffix.lower() in MEDIA_EXTENSIONS
-        ]
+        return [p for p in paths if p.is_dir() or p.suffix.lower() in MEDIA_EXTENSIONS]
 
 
 class PickerScreen(Screen):
@@ -97,17 +103,16 @@ class PickerScreen(Screen):
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
         path = event.path
-        if path.suffix.lower() in MEDIA_EXTENSIONS:
-            if path not in self.selected_files:
-                self.selected_files.append(path)
-                self._update_selection()
+        if path.suffix.lower() in MEDIA_EXTENSIONS and path not in self.selected_files:
+            self.selected_files.append(path)
+            self._update_selection()
 
     def _update_selection(self) -> None:
         widget = self.query_one("#selected-list", Static)
         if not self.selected_files:
             widget.update("(none)")
         else:
-            lines = [f"  {i+1}. {f.name}" for i, f in enumerate(self.selected_files)]
+            lines = [f"  {i + 1}. {f.name}" for i, f in enumerate(self.selected_files)]
             widget.update("\n".join(lines))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -119,6 +124,7 @@ class PickerScreen(Screen):
         elif event.button.id == "btn-next":
             if self.selected_files:
                 from mediascribe.tui.screens.profile import ProfileScreen
+
                 self.app.push_screen(ProfileScreen(self.selected_files))
             else:
                 self.query_one("#selected-list", Static).update(

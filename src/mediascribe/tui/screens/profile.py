@@ -74,8 +74,12 @@ class ProfileScreen(Screen):
         self.files = files
 
     def compose(self) -> ComposeResult:
-        profiles = [("General", "general"), ("Anime", "anime"),
-                    ("Podcast", "podcast"), ("Meeting", "meeting")]
+        profiles = [
+            ("General", "general"),
+            ("Anime", "anime"),
+            ("Podcast", "podcast"),
+            ("Meeting", "meeting"),
+        ]
 
         with Vertical(id="profile-box"):
             yield Label("Pipeline Configuration", id="profile-title")
@@ -90,7 +94,11 @@ class ProfileScreen(Screen):
 
             with Horizontal(classes="config-row"):
                 yield Label("Translate to:", classes="config-label")
-                yield Input(placeholder="e.g., en (leave empty for none)", id="inp-target", classes="config-input")
+                yield Input(
+                    placeholder="e.g., en (leave empty for none)",
+                    id="inp-target",
+                    classes="config-input",
+                )
 
             with Horizontal(classes="config-row"):
                 yield Label("Source language:", classes="config-label")
@@ -122,6 +130,7 @@ class ProfileScreen(Screen):
         elif event.button.id == "btn-run":
             config = self._gather_config()
             from mediascribe.tui.screens.pipeline import PipelineScreen
+
             self.app.push_screen(PipelineScreen(self.files, config))
 
     def _gather_config(self) -> dict:
