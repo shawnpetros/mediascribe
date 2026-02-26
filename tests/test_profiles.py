@@ -86,10 +86,7 @@ class TestLoadProfile:
         profiles_dir = tmp_path / "profiles"
         profiles_dir.mkdir()
         (profiles_dir / "anime.toml").write_text(
-            'description = "My anime profile"\n'
-            "\n"
-            "[transcription]\n"
-            'mode = "api"\n',
+            'description = "My anime profile"\n\n[transcription]\nmode = "api"\n',
             encoding="utf-8",
         )
 
