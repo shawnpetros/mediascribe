@@ -53,6 +53,7 @@ class MediascribeSettings(BaseSettings):
     translation_batch_size: int = 15
     enable_review_pass: bool = True
     custom_instructions: str = ""
+    profile: str = "general"
 
     # ── Source / Target ──────────────────────────────────
     source_language: str | None = None       # None = auto-detect

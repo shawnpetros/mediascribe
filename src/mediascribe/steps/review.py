@@ -137,8 +137,7 @@ class ReviewStep(PipelineStep):
         if not draft_path.exists():
             raise FileNotFoundError(f"No draft SRT found: {draft_path}")
 
-        # Get review prompt
-        template = TEMPLATES.get("general", TEMPLATES["general"])
+        template = TEMPLATES.get(settings.profile, TEMPLATES["general"])
         _, review_prompt = render_prompt(
             template, target, settings.custom_instructions,
         )

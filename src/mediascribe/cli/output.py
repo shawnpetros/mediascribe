@@ -90,6 +90,7 @@ def run_pipeline_for_file(
         custom_instructions=custom_instructions,
         enable_review_pass=enable_review,
         output_dir=output_dir,
+        profile=profile,
     )
     settings.ensure_dirs()
 
@@ -124,11 +125,50 @@ def run_pipeline_for_file(
         console.print(f"\n[bold red]Pipeline failed: {result.error}[/bold red]")
         raise SystemExit(1)
 
+    _export_additional_formats(job, settings)
+
     console.print(f"\n{'─' * 60}")
     console.print("  [bold]Output:[/bold]")
     for p in sorted(output_dir.glob(f"{job.stem}*")):
         console.print(f"    {p.name}")
     console.print(f"{'─' * 60}")
+
+
+# ── Multi-format export ──────────────────────────────────────────────────────
+
+
+def _export_additional_formats(job: Job, settings: MediascribeSettings) -> None:
+    """Export results in all configured output formats beyond SRT."""
+    formats = settings.output_formats
+    has_translation = settings.target_language is not None
+
+    if not job.segments:
+        return
+
+    stem = job.stem
+
+    if "vtt" in formats:
+        from mediascribe.formats.vtt import save_vtt
+        vtt_path = settings.output_dir / f"{stem}.vtt"
+        save_vtt(job.segments, vtt_path, use_translation=has_translation)
+
+    if "txt" in formats:
+        from mediascribe.formats.transcript import save_transcript
+        txt_path = settings.output_dir / f"{stem}.txt"
+        save_transcript(
+            job.segments, txt_path,
+            use_translation=has_translation,
+        )
+
+    if "md" in formats:
+        from mediascribe.formats.transcript import save_markdown_from_job
+        md_path = settings.output_dir / f"{stem}.md"
+        save_markdown_from_job(job, md_path, use_translation=has_translation)
+
+    if "json" in formats:
+        from mediascribe.formats.json_export import save_json
+        json_path = settings.output_dir / f"{stem}.json"
+        save_json(job, json_path)
 
 
 # ── Standalone translate ─────────────────────────────────────────────────────
@@ -274,6 +314,7 @@ _CONFIG_DESCRIPTIONS: dict[str, str] = {
     "translation_batch_size": "Subtitles per translation API call",
     "enable_review_pass": "Enable two-pass translation review",
     "custom_instructions": "Custom instructions for translation prompts",
+    "profile": "Translation profile: general, anime, podcast, meeting",
     "source_language": "Source language code (None = auto-detect)",
     "target_language": "Target language code (None = skip translation)",
     "max_concurrency": "Max concurrent processing jobs",
