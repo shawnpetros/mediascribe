@@ -7,7 +7,7 @@ name = "mediascribe"
 version = "0.1.0"
 description = "TUI-first tool for transcribing, translating, and analyzing audio/video media"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 requires-python = ">=3.12"
 authors = [{ name = "Shawn Petros" }]
 keywords = ["transcription", "subtitles", "whisper", "translation", "tui"]
@@ -17,6 +17,7 @@ classifiers = [
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
     "Topic :: Multimedia :: Video",
 ]
@@ -53,8 +54,11 @@ all = ["mediascribe[tui,diarize]"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
     "ruff>=0.5",
     "mypy>=1.10",
+    "build>=1.0",
+    "twine>=5.0",
 ]
 
 [project.scripts]
@@ -62,6 +66,9 @@ mediascribe = "mediascribe.cli.app:main"
 
 [project.urls]
 Repository = "https://github.com/shawnpetros/mediascribe"
+Documentation = "https://github.com/shawnpetros/mediascribe/blob/main/docs/SPEC.md"
+Issues = "https://github.com/shawnpetros/mediascribe/issues"
+Changelog = "https://github.com/shawnpetros/mediascribe/blob/main/docs/PROJECT.md"
 
 # ── Tool Config ──────────────────────────────────────────
 

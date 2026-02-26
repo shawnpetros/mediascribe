@@ -1,1 +1,1 @@
-"""TUI widgets — file browser, progress, log panel."""
+"""TUI widgets — reusable components for the mediascribe TUI."""

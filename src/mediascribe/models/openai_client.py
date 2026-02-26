@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import Any
 
 from openai import OpenAI
 
@@ -27,10 +28,10 @@ def call_openai_json(
     client: OpenAI,
     model: str,
     system_prompt: str,
-    payload: list[dict],
+    payload: list[dict[str, Any]],
     max_tokens: int = 2000,
     temperature: float = 0.3,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Call OpenAI with a JSON payload and parse the JSON response.
 
     Sends the system prompt and a JSON-encoded user message.
@@ -64,4 +65,5 @@ def call_openai_json(
     # Strip markdown fences if the model wraps them
     raw = re.sub(r"^```(?:json)?\s*", "", raw)
     raw = re.sub(r"\s*```$", "", raw)
-    return json.loads(raw)
+    result: list[dict[str, Any]] = json.loads(raw)
+    return result

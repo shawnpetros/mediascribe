@@ -15,9 +15,13 @@ from mediascribe.steps.base import PipelineStep, StepResult
 def probe_file(path: Path) -> MediaInfo:
     """Run ffprobe on a file and return structured MediaInfo."""
     cmd = [
-        "ffprobe", "-v", "quiet",
-        "-print_format", "json",
-        "-show_format", "-show_streams",
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_format",
+        "-show_streams",
         str(path),
     ]
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -52,7 +56,10 @@ class DetectStep(PipelineStep):
     description = "Detecting file type and metadata"
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         info = probe_file(job.input_path)
         job.media_info = info

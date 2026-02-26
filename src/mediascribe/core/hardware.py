@@ -53,6 +53,7 @@ def detect_hardware() -> HardwareProfile:
     # Check for CUDA GPU
     try:
         import torch
+
         if torch.cuda.is_available():
             has_gpu = True
             gpu_name = torch.cuda.get_device_name(0)
@@ -67,7 +68,7 @@ def detect_hardware() -> HardwareProfile:
     return HardwareProfile(
         cpu_count=psutil.cpu_count(logical=True) or 1,
         cpu_brand=platform.processor() or "unknown",
-        ram_gb=psutil.virtual_memory().total / (1024 ** 3),
+        ram_gb=psutil.virtual_memory().total / (1024**3),
         has_gpu=has_gpu,
         gpu_name=gpu_name,
         os_name=platform.system(),

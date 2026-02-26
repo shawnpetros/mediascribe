@@ -9,10 +9,9 @@ Covers:
 - Edge cases: empty segments, translation mode, empty text filtering
 """
 
-import pytest
 from pathlib import Path
 
-from pysrt import SubRipFile
+import pytest
 
 from mediascribe.core.job import Segment
 from mediascribe.formats.srt import (
@@ -26,8 +25,8 @@ from mediascribe.formats.srt import (
     srt_to_segments,
 )
 
-
 # ── Time conversion roundtrip ────────────────────────────────────────────────
+
 
 class TestTimeConversion:
     def test_zero(self):
@@ -57,6 +56,7 @@ class TestTimeConversion:
 
 # ── fmt_ts display formatting ────────────────────────────────────────────────
 
+
 class TestFmtTs:
     def test_zero(self):
         assert fmt_ts(0.0) == "00:00"
@@ -72,6 +72,7 @@ class TestFmtTs:
 
 
 # ── segments_to_srt ──────────────────────────────────────────────────────────
+
 
 class TestSegmentsToSrt:
     def test_basic_conversion(self):
@@ -95,16 +96,14 @@ class TestSegmentsToSrt:
 
     def test_translation_mode(self):
         segs = [
-            Segment(index=1, start=0.0, end=2.0, text="こんにちは",
-                    translation="Hello"),
+            Segment(index=1, start=0.0, end=2.0, text="こんにちは", translation="Hello"),
         ]
         srt = segments_to_srt(segs, use_translation=True)
         assert srt[0].text == "Hello"
 
     def test_translation_fallback_to_text(self):
         segs = [
-            Segment(index=1, start=0.0, end=2.0, text="こんにちは",
-                    translation=None),
+            Segment(index=1, start=0.0, end=2.0, text="こんにちは", translation=None),
         ]
         srt = segments_to_srt(segs, use_translation=True)
         assert srt[0].text == "こんにちは"
@@ -115,6 +114,7 @@ class TestSegmentsToSrt:
 
 
 # ── dicts_to_srt ─────────────────────────────────────────────────────────────
+
 
 class TestDictsToSrt:
     def test_basic(self):
@@ -144,6 +144,7 @@ class TestDictsToSrt:
 
 
 # ── File I/O ─────────────────────────────────────────────────────────────────
+
 
 class TestFileIO:
     def test_save_and_read_roundtrip(self, tmp_path: Path):

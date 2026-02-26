@@ -16,10 +16,13 @@ from typing import Literal
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+TranscriptionMode = Literal["local", "api", "auto"]
+
 
 def _default_config_dir() -> Path:
     """XDG-compliant config directory."""
     import os
+
     xdg = os.environ.get("XDG_CONFIG_HOME", "")
     base = Path(xdg) if xdg else Path.home() / ".config"
     return base / "mediascribe"
@@ -40,7 +43,7 @@ class MediascribeSettings(BaseSettings):
     huggingface_token: SecretStr | None = None
 
     # ── Transcription ────────────────────────────────────
-    transcription_mode: Literal["local", "api", "auto"] = "auto"
+    transcription_mode: TranscriptionMode = "auto"
     whisper_model: str = "large-v3"
     whisper_device: str = "auto"
     whisper_compute: str = "int8"
@@ -53,10 +56,11 @@ class MediascribeSettings(BaseSettings):
     translation_batch_size: int = 15
     enable_review_pass: bool = True
     custom_instructions: str = ""
+    profile: str = "general"
 
     # ── Source / Target ──────────────────────────────────
-    source_language: str | None = None       # None = auto-detect
-    target_language: str | None = None       # None = skip translation
+    source_language: str | None = None  # None = auto-detect
+    target_language: str | None = None  # None = skip translation
 
     # ── Processing ───────────────────────────────────────
     max_concurrency: int = 1
@@ -66,7 +70,7 @@ class MediascribeSettings(BaseSettings):
     # ── Subtitle Timing ──────────────────────────────────
     max_subtitle_duration_sec: float = 7.0
     min_gap_sec: float = 0.15
-    chars_per_second: float = 5.0            # for duration cap heuristic
+    chars_per_second: float = 5.0  # for duration cap heuristic
 
     # ── Paths ────────────────────────────────────────────
     config_dir: Path = _default_config_dir()

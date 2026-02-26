@@ -32,7 +32,7 @@ class MediaInfo:
     codec_audio: str | None = None
     sample_rate: int | None = None
     channels: int | None = None
-    language: str | None = None      # auto-detected source language
+    language: str | None = None  # auto-detected source language
     width: int | None = None
     height: int | None = None
 
@@ -42,8 +42,8 @@ class Segment:
     """A single transcribed/translated segment."""
 
     index: int
-    start: float                     # seconds
-    end: float                       # seconds
+    start: float  # seconds
+    end: float  # seconds
     text: str
     translation: str | None = None
     speaker: str | None = None

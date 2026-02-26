@@ -11,22 +11,19 @@ which are written to a source-language SRT file with optimized timing.
 
 from __future__ import annotations
 
-import re
 import shutil
 import time
 from collections import Counter
 from pathlib import Path
-
-from pysrt import SubRipFile, SubRipItem
+from typing import Any
 
 from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.events import EventBus, EventType, PipelineEvent
 from mediascribe.core.job import Job, Segment
-from mediascribe.formats.srt import dicts_to_srt, fmt_ts, save_srt, srt_time
+from mediascribe.formats.srt import dicts_to_srt, fmt_ts, save_srt
 from mediascribe.steps.base import PipelineStep, StepResult
 from mediascribe.steps.timing import fix_subtitle_timing
 from mediascribe.utils.ffmpeg import probe_duration, split_audio
-
 
 # ── Validation ───────────────────────────────────────────────────────────────
 
@@ -34,7 +31,7 @@ from mediascribe.utils.ffmpeg import probe_duration, split_audio
 MAX_RETRIES = 3
 
 
-def validate_segments(segs: list[dict]) -> tuple[bool, str]:
+def validate_segments(segs: list[dict[str, Any]]) -> tuple[bool, str]:
     """Check for hallucination patterns in transcription output.
 
     Returns:
@@ -90,13 +87,14 @@ def _text_similar(a: str, b: str, threshold: float = 0.7) -> bool:
 
     # Character-level overlap (order-independent)
     from collections import Counter as _Counter
+
     ca, cb = _Counter(a), _Counter(b)
     overlap = sum((ca & cb).values())
     total = max(sum(ca.values()), sum(cb.values()))
     return (overlap / total) >= threshold if total else True
 
 
-def _deduplicate_segments(segments: list[dict]) -> list[dict]:
+def _deduplicate_segments(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Sort and deduplicate segments at chunk boundaries.
 
     With overlapping chunks, the same speech may be transcribed in both
@@ -106,7 +104,7 @@ def _deduplicate_segments(segments: list[dict]) -> list[dict]:
       3. Exact text still on screen (prev not yet ended) → skip
     """
     segments.sort(key=lambda s: s["start"])
-    deduped: list[dict] = []
+    deduped: list[dict[str, Any]] = []
 
     for s in segments:
         if deduped:
@@ -122,10 +120,7 @@ def _deduplicate_segments(segments: list[dict]) -> list[dict]:
                 continue
 
             # ③ Fuzzy match with overlapping time → keep the longer text
-            if (
-                abs(s["start"] - prev["start"]) < 3.0
-                and _text_similar(s["text"], prev["text"])
-            ):
+            if abs(s["start"] - prev["start"]) < 3.0 and _text_similar(s["text"], prev["text"]):
                 # Keep whichever transcription is longer (more complete)
                 if len(s["text"]) > len(prev["text"]):
                     deduped[-1] = s
@@ -138,9 +133,9 @@ def _deduplicate_segments(segments: list[dict]) -> list[dict]:
     return deduped
 
 
-def _clean_segments(segments: list[dict]) -> list[dict]:
+def _clean_segments(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Remove artifacts and clean up Whisper output."""
-    clean: list[dict] = []
+    clean: list[dict[str, Any]] = []
     prev_text = ""
 
     for s in segments:
@@ -165,7 +160,7 @@ def _transcribe_local(
     settings: MediascribeSettings,
     events: EventBus,
     stem: str,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Chunked local transcription with overlap, loop detection, and retries.
 
     Chunks overlap by ``chunk_overlap_sec`` so sentences at boundaries are
@@ -182,25 +177,26 @@ def _transcribe_local(
     chunks, offsets = split_audio(wav_path, chunk_dir, chunk_sec, overlap_sec)
 
     events.log(
-        f"Duration: {fmt_ts(dur)} | {len(chunks)} chunks × {chunk_sec}s "
-        f"(overlap {overlap_sec}s)",
+        f"Duration: {fmt_ts(dur)} | {len(chunks)} chunks × {chunk_sec}s (overlap {overlap_sec}s)",
         step="transcribe",
     )
 
     # Transcribe each chunk
-    all_segments: list[dict] = []
+    all_segments: list[dict[str, Any]] = []
     chunk_times: list[float] = []
 
-    for ci, (chunk_path, offset) in enumerate(zip(chunks, offsets)):
+    for ci, (chunk_path, offset) in enumerate(zip(chunks, offsets, strict=True)):
         end_sec = min(offset + chunk_sec, dur)
         label = f"Chunk {ci + 1}/{len(chunks)}  {fmt_ts(offset)}→{fmt_ts(end_sec)}"
 
-        events.emit(PipelineEvent(
-            type=EventType.STEP_PROGRESS,
-            step_name="transcribe",
-            message=label,
-            progress=(ci / len(chunks)),
-        ))
+        events.emit(
+            PipelineEvent(
+                type=EventType.STEP_PROGRESS,
+                step_name="transcribe",
+                message=label,
+                progress=(ci / len(chunks)),
+            )
+        )
 
         ct0 = time.time()
         segs = None
@@ -232,7 +228,7 @@ def _transcribe_local(
 
         if segs is None:
             events.warn("All retries failed — using last attempt", step="transcribe")
-            segs = attempt  # type: ignore[assignment]
+            segs = attempt
 
         ct_elapsed = time.time() - ct0
         chunk_times.append(ct_elapsed)
@@ -263,10 +259,10 @@ def _transcribe_api(
     wav_path: Path,
     settings: MediascribeSettings,
     events: EventBus,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Transcribe via OpenAI Whisper API."""
-    from mediascribe.models.whisper_api import transcribe_via_api
     from mediascribe.models.openai_client import get_client
+    from mediascribe.models.whisper_api import transcribe_via_api
 
     dur = probe_duration(wav_path)
     cost = dur / 60 * 0.006
@@ -279,12 +275,14 @@ def _transcribe_api(
     api_key = settings.openai_api_key.get_secret_value() if settings.openai_api_key else None
     client = get_client(api_key)
 
-    events.emit(PipelineEvent(
-        type=EventType.STEP_PROGRESS,
-        step_name="transcribe",
-        message="Uploading and transcribing via API…",
-        progress=0.3,
-    ))
+    events.emit(
+        PipelineEvent(
+            type=EventType.STEP_PROGRESS,
+            step_name="transcribe",
+            message="Uploading and transcribing via API…",
+            progress=0.3,
+        )
+    )
 
     segments = transcribe_via_api(
         audio_path=wav_path,
@@ -315,7 +313,10 @@ class TranscribeStep(PipelineStep):
     description = "Transcribing audio to text"
 
     def execute(
-        self, job: Job, settings: MediascribeSettings, events: EventBus,
+        self,
+        job: Job,
+        settings: MediascribeSettings,
+        events: EventBus,
     ) -> StepResult:
         if not job.audio_path or not job.audio_path.exists():
             raise FileNotFoundError("No audio file found. Run normalize step first.")
@@ -336,7 +337,11 @@ class TranscribeStep(PipelineStep):
             raw_segments = _transcribe_api(job.audio_path, settings, events)
         else:
             raw_segments = _transcribe_local(
-                job.audio_path, job.output_dir, settings, events, stem,
+                job.audio_path,
+                job.output_dir,
+                settings,
+                events,
+                stem,
             )
 
         # Post-process
@@ -370,17 +375,18 @@ class TranscribeStep(PipelineStep):
 
         events.log(f"{len(srt)} subtitles → {srt_path.name}", step=self.name)
 
-        return StepResult(data={
-            "srt_path": str(srt_path),
-            "segment_count": len(clean),
-            "mode": mode,
-        })
+        return StepResult(
+            data={
+                "srt_path": str(srt_path),
+                "segment_count": len(clean),
+                "mode": mode,
+            }
+        )
 
     def can_skip(self, job: Job) -> bool:
         """Skip if SRT already exists."""
         from mediascribe.formats.srt import srt_to_segments
 
-        lang = "unknown"  # We don't have settings here, check any matching SRT
         # Look for any *_*.srt file matching the stem
         for p in job.output_dir.glob(f"{job.stem}_*.srt"):
             if "_en" not in p.stem:  # Skip translation SRTs

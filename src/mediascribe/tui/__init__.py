@@ -1,1 +1,1 @@
-"""Textual TUI application — Phase 2."""
+"""Textual TUI application for mediascribe."""

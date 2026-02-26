@@ -10,18 +10,17 @@ Covers:
 - _text_similar helper edge cases
 """
 
-import pytest
-
 from mediascribe.steps.transcribe import _deduplicate_segments, _text_similar
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _seg(text: str, start: float, end: float) -> dict:
     return {"text": text, "start": start, "end": end}
 
 
 # ── _text_similar ────────────────────────────────────────────────────────────
+
 
 class TestTextSimilar:
     def test_identical_strings(self):
@@ -56,6 +55,7 @@ class TestTextSimilar:
 
 # ── No duplicates ────────────────────────────────────────────────────────────
 
+
 class TestNoDuplicates:
     def test_empty_list(self):
         assert _deduplicate_segments([]) == []
@@ -77,6 +77,7 @@ class TestNoDuplicates:
 
 
 # ── Exact text + close timestamps → merge ────────────────────────────────────
+
 
 class TestExactMerge:
     def test_same_text_close_start(self):
@@ -101,6 +102,7 @@ class TestExactMerge:
 
 # ── Exact text, overlapping → skip ──────────────────────────────────────────
 
+
 class TestExactSkip:
     def test_same_text_overlapping_timeline(self):
         segs = [
@@ -112,6 +114,7 @@ class TestExactSkip:
 
 
 # ── Fuzzy similar text → keep longer ─────────────────────────────────────────
+
 
 class TestFuzzyDedup:
     def test_similar_text_keep_longer(self):
@@ -145,6 +148,7 @@ class TestFuzzyDedup:
 
 # ── Sorting ──────────────────────────────────────────────────────────────────
 
+
 class TestSorting:
     def test_out_of_order_gets_sorted(self):
         segs = [
@@ -157,6 +161,7 @@ class TestSorting:
 
 
 # ── Realistic overlap scenario ───────────────────────────────────────────────
+
 
 class TestRealisticOverlap:
     def test_two_chunks_with_overlap(self):

@@ -7,9 +7,9 @@
 
 ## Current Status
 
-**Phase:** 1 — Core Library + CLI (MVP) — **CORE COMPLETE + TESTED**
-**Last Session:** 2026-02-15
-**Last Agent/Session Notes:** All open questions resolved. Overlap-based chunking implemented. Comprehensive test suite added for core logic modules.
+**Phase:** 2 — TUI + Profiles — **PHASE 1 COMPLETE, PHASE 2+3 IMPLEMENTED**
+**Last Session:** 2026-02-26
+**Last Agent/Session Notes:** Feature audit completed. All remaining Phase 1 gaps closed. Phase 2 (TUI + Profiles) and Phase 3 (Diarize + Analyze) fully implemented. CI/CD added. Test suite expanded from 128 to 184 tests.
 
 ---
 
@@ -87,6 +87,45 @@
 12. test: comprehensive test suite for core logic modules
 13. docs: resolve open questions, update SPEC.md + PROJECT.md
 
+### Session 4 — 2026-02-26
+**Focus:** Feature audit + implement all remaining feature sets
+**Completed:**
+- Feature audit identifying all gaps across Phases 1-4
+- Wired --profile flag through TranslateStep and ReviewStep (was ignored)
+- Added ExportStep for multi-format output (SRT, VTT, TXT, JSON)
+- Added --formats CLI flag to transcribe and batch commands
+- Added standalone `mediascribe translate <srt>` command
+- Replaced config stub with full sub-app (show, set, path, init, profiles)
+- Implemented profile TOML loading system (core/profiles.py)
+  - Built-in profiles: general, anime, podcast, meeting
+  - User profiles from ~/.config/mediascribe/profiles/*.toml
+  - Profile overrides merge with CLI flags
+- Implemented DiarizeStep with pyannote.audio 3.x integration
+  - Speaker attribution via temporal overlap matching
+  - Graceful fallback when pyannote not installed
+- Implemented AnalyzeStep for AI-powered content analysis
+  - Summary generation, topic extraction, action items, key points
+- Added --diarize and --analyze CLI flags
+- Built full Textual TUI application:
+  - WelcomeScreen: dependency checks, hardware info
+  - SetupScreen: API key configuration
+  - PickerScreen: media file browser
+  - ProfileScreen: pipeline configuration (profile, languages, formats)
+  - PipelineScreen: background execution with live progress + log
+  - ResultsScreen: output file listing
+- Added GitHub Actions CI workflow (test + lint + typecheck)
+- Fixed all ruff lint warnings across codebase
+- Added comprehensive test suite for new features (56 new tests)
+
+**Commits:**
+14. feat: wire profile selection + multi-format export step
+15. feat: standalone translate command + config CLI + profile system
+16. feat: diarize step + analyze step with CLI integration
+17. feat: Textual TUI application with full screen flow
+18. chore: add GitHub Actions CI + fix all lint issues
+19. test: comprehensive tests for all new features
+20. docs: update PROJECT.md with session 4 work
+
 ---
 
 ## Phase 1 — Core Library + CLI (MVP)
@@ -99,7 +138,7 @@
 - [x] .gitignore
 - [x] Git repo initialized
 - [x] Basic test structure
-- [ ] CI config (GitHub Actions)
+- [x] CI config (GitHub Actions)
 - [ ] Dev environment setup docs
 
 ### 1.2 Core Abstractions
@@ -139,40 +178,44 @@
 - [x] cli/app.py — Typer app with transcribe, batch, config, tui commands
 - [x] cli/output.py — Rich event handler + pipeline runner
 - [x] End-to-end pipeline wiring (detect -> normalize -> transcribe -> translate -> review)
-- [ ] mediascribe translate <srt> — standalone translate command
-- [ ] mediascribe config set/get/list — config management
+- [x] mediascribe translate <srt> — standalone translate command
+- [x] mediascribe config set/get/list — config management
+- [x] ExportStep for multi-format output (SRT, VTT, TXT, JSON)
+- [x] --profile flag wired to TranslateStep and ReviewStep
+- [x] --formats, --diarize, --analyze CLI flags
 
 ---
 
 ## Phase 2 — TUI + Profiles
 
 ### 2.1 TUI Application
-- [ ] tui/app.py — Textual app shell with screen navigation
-- [ ] tui/screens/welcome.py — Welcome + dependency check
-- [ ] tui/screens/setup.py — API key onboarding
-- [ ] tui/screens/picker.py — File/folder picker
-- [ ] tui/screens/profile.py — Profile selection + config
-- [ ] tui/screens/pipeline.py — Live execution progress
-- [ ] tui/screens/results.py — Output review
+- [x] tui/app.py — Textual app shell with screen navigation
+- [x] tui/screens/welcome.py — Welcome + dependency check + hardware info
+- [x] tui/screens/setup.py — API key onboarding + config save
+- [x] tui/screens/picker.py — File/folder picker with media filtering
+- [x] tui/screens/profile.py — Profile selection + pipeline config
+- [x] tui/screens/pipeline.py — Live execution progress with log
+- [x] tui/screens/results.py — Output file review
 
 ### 2.2 Profile System
-- [ ] Profile TOML schema
-- [ ] Built-in profiles: anime_subtitles, podcast, meeting, lecture
-- [ ] Custom profile creation
-- [ ] Profile-to-pipeline config mapping
+- [x] Profile TOML schema
+- [x] Built-in profiles: anime, podcast, meeting, general
+- [x] Custom profile creation (user TOML files)
+- [x] Profile-to-pipeline config mapping
+- [x] core/profiles.py — Profile loading, listing, saving
 
 ### 2.3 Smart Features
 - [ ] Custom prompt builder (user intent -> system prompt)
-- [ ] Hardware detection + concurrency recommendation
-- [ ] Processing time estimation
+- [x] Hardware detection + concurrency recommendation
+- [x] Processing time estimation
 - [ ] Large batch warnings
 
 ---
 
 ## Phase 3 — Advanced Features
 
-- [ ] Speaker diarization (pyannote.audio 3.x integration)
-- [ ] Analyze step (summarize, topics, action items)
+- [x] Speaker diarization (pyannote.audio 3.x integration)
+- [x] Analyze step (summarize, topics, action items)
 - [ ] Markdown transcript format with speaker labels
 - [ ] Model download/cache management CLI
 - [ ] Checkpoint-based resume on interrupt
@@ -186,7 +229,7 @@
 - [ ] Homebrew tap
 - [ ] Docker image
 - [ ] User documentation
-- [ ] GitHub Actions CI/CD
+- [x] GitHub Actions CI/CD
 
 ---
 
@@ -208,6 +251,9 @@
 | 2026-02-15 | pyannote.audio 3.x | Best-in-class diarization, decoupled from transcription |
 | 2026-02-15 | No streaming v1 | Different architecture, niche demand, quality tradeoff |
 | 2026-02-15 | Overlap chunking (15s) | Eliminates mid-sentence cuts at chunk boundaries |
+| 2026-02-26 | Profile TOML loading | User-customizable profiles beyond built-in prompts |
+| 2026-02-26 | ExportStep pattern | Decoupled format output from pipeline steps |
+| 2026-02-26 | Graceful diarization | Optional pyannote dependency with clear fallback |
 
 ---
 
