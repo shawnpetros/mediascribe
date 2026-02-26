@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 import typer
 from pydantic import SecretStr
@@ -64,7 +64,7 @@ def version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option("--version", "-V", callback=version_callback, is_eager=True),
     ] = None,
 ) -> None:
@@ -77,15 +77,50 @@ def main(
 @app.command()
 def transcribe(
     file: Annotated[Path, typer.Argument(help="Input audio or video file")],
-    lang: Annotated[str | None, typer.Option("--lang", "-l", help="Source language code (e.g., ja, en, es). Auto-detect if omitted")] = None,
-    translate: Annotated[str | None, typer.Option("--translate", "-t", help="Target language for translation (e.g., en)")] = None,
-    profile: Annotated[str | None, typer.Option("--profile", "-p", help="Prompt profile: general, anime, podcast, meeting")] = None,
-    model: Annotated[str | None, typer.Option("--model", "-m", help="Translation model")] = None,
-    whisper_model: Annotated[str | None, typer.Option("--whisper-model", help="Whisper model size")] = None,
-    mode: Annotated[str | None, typer.Option("--mode", help="Transcription mode: local, api, auto")] = None,
-    output: Annotated[Path | None, typer.Option("--output", "-o", help="Output directory")] = None,
-    custom: Annotated[str | None, typer.Option("--custom", help="Custom instructions for translation")] = None,
-    no_review: Annotated[bool, typer.Option("--no-review", help="Skip the review (second) pass")] = False,
+    lang: Annotated[
+        str | None,
+        typer.Option(
+            "--lang",
+            "-l",
+            help="Source language code (e.g., ja, en, es). Auto-detect if omitted",
+        ),
+    ] = None,
+    translate: Annotated[
+        str | None,
+        typer.Option("--translate", "-t", help="Target language for translation (e.g., en)"),
+    ] = None,
+    profile: Annotated[
+        str | None,
+        typer.Option(
+            "--profile",
+            "-p",
+            help="Prompt profile: general, anime, podcast, meeting",
+        ),
+    ] = None,
+    model: Annotated[
+        str | None,
+        typer.Option("--model", "-m", help="Translation model"),
+    ] = None,
+    whisper_model: Annotated[
+        str | None,
+        typer.Option("--whisper-model", help="Whisper model size"),
+    ] = None,
+    mode: Annotated[
+        str | None,
+        typer.Option("--mode", help="Transcription mode: local, api, auto"),
+    ] = None,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", "-o", help="Output directory"),
+    ] = None,
+    custom: Annotated[
+        str | None,
+        typer.Option("--custom", help="Custom instructions for translation"),
+    ] = None,
+    no_review: Annotated[
+        bool,
+        typer.Option("--no-review", help="Skip the review (second) pass"),
+    ] = False,
 ) -> None:
     """Transcribe (and optionally translate) a single file."""
     from mediascribe.cli.output import run_pipeline_for_file
@@ -169,11 +204,26 @@ def batch(
 @app.command()
 def translate(
     srt: Annotated[Path, typer.Argument(help="Source .srt file to translate")],
-    to: Annotated[str, typer.Option("--to", "-t", help="Target language code (e.g., en)")],
-    profile: Annotated[str | None, typer.Option("--profile", "-p", help="Prompt profile")] = None,
-    model: Annotated[str | None, typer.Option("--model", "-m", help="Translation model")] = None,
-    output: Annotated[Path | None, typer.Option("--output", "-o", help="Output .srt path or output directory")] = None,
-    custom: Annotated[str | None, typer.Option("--custom", help="Custom translation instructions")] = None,
+    to: Annotated[
+        str,
+        typer.Option("--to", "-t", help="Target language code (e.g., en)"),
+    ],
+    profile: Annotated[
+        str | None,
+        typer.Option("--profile", "-p", help="Prompt profile"),
+    ] = None,
+    model: Annotated[
+        str | None,
+        typer.Option("--model", "-m", help="Translation model"),
+    ] = None,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", "-o", help="Output .srt path or output directory"),
+    ] = None,
+    custom: Annotated[
+        str | None,
+        typer.Option("--custom", help="Custom translation instructions"),
+    ] = None,
     no_review: Annotated[bool, typer.Option("--no-review", help="Skip review pass")] = False,
 ) -> None:
     """Translate an existing subtitle file without re-transcribing media."""
@@ -221,7 +271,7 @@ def config_set(
         parsed = parse_setting_value(k, value)
     except Exception as exc:
         console.print(f"[red]Error:[/red] Invalid value for {k}: {exc}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     user_cfg = load_user_config()
     if parsed is None:
@@ -233,7 +283,7 @@ def config_set(
         MediascribeSettings(**user_cfg)
     except Exception as exc:
         console.print(f"[red]Error:[/red] Config validation failed: {exc}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     path = save_user_config(user_cfg)
     if parsed is None:

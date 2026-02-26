@@ -21,7 +21,6 @@ from mediascribe.models.openai_client import call_openai_json, get_client
 from mediascribe.models.prompts import TEMPLATES, render_prompt
 from mediascribe.steps.base import PipelineStep, StepResult
 
-
 # ── Review Logic ─────────────────────────────────────────────────────────────
 
 REVIEW_BATCH_SIZE = 20
@@ -85,7 +84,7 @@ def review_translations(
                 reviewed[item["id"]] = item["text"]
         except (json.JSONDecodeError, KeyError):
             if events:
-                events.warn(f"Parse error in review batch — keeping drafts", step="review")
+                events.warn("Parse error in review batch — keeping drafts", step="review")
             for item in batch:
                 reviewed[item["id"]] = item["en"]
 

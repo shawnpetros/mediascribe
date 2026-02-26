@@ -22,7 +22,6 @@ from mediascribe.models.openai_client import call_openai_json, get_client
 from mediascribe.models.prompts import TEMPLATES, render_prompt
 from mediascribe.steps.base import PipelineStep, StepResult
 
-
 # ── Translation Logic ────────────────────────────────────────────────────────
 
 
@@ -189,6 +188,6 @@ class TranslateStep(PipelineStep):
 
     def can_skip(self, job: Job) -> bool:
         """Skip if draft translation SRT already exists."""
-        for p in job.output_dir.glob(f"{job.stem}_*_draft.srt"):
+        for _p in job.output_dir.glob(f"{job.stem}_*_draft.srt"):
             return True
         return False

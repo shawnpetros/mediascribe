@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import tomllib
+from contextlib import suppress
 from pathlib import Path
 from types import UnionType
 from typing import Any, Literal, Union, get_args, get_origin
@@ -246,11 +247,8 @@ def save_user_config(values: dict[str, Any], path: Path | None = None) -> Path:
 
     content = "\n".join(lines) + ("\n" if lines else "")
     cfg_path.write_text(content, encoding="utf-8")
-    try:
+    with suppress(OSError):
         cfg_path.chmod(0o600)
-    except OSError:
-        # Best effort only (e.g., Windows / restricted FS).
-        pass
     return cfg_path
 
 
