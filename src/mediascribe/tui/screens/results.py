@@ -10,7 +10,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Label, Static
 
 
-class ResultsScreen(Screen):
+class ResultsScreen(Screen[None]):
     """Post-pipeline results review screen."""
 
     DEFAULT_CSS = """

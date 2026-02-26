@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -10,7 +11,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Checkbox, Input, Label, Select, Static
 
 
-class ProfileScreen(Screen):
+class ProfileScreen(Screen[None]):
     """Pipeline configuration screen — profile, languages, options."""
 
     DEFAULT_CSS = """
@@ -133,7 +134,7 @@ class ProfileScreen(Screen):
 
             self.app.push_screen(PipelineScreen(self.files, config))
 
-    def _gather_config(self) -> dict:
+    def _gather_config(self) -> dict[str, Any]:
         formats = []
         if self.query_one("#chk-srt", Checkbox).value:
             formats.append("srt")

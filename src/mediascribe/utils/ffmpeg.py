@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from typing import Any
 
 
 def probe_duration(path: Path) -> float:
@@ -21,7 +22,7 @@ def probe_duration(path: Path) -> float:
     return float(r.stdout.strip())
 
 
-def probe_json(path: Path) -> dict:
+def probe_json(path: Path) -> dict[str, Any]:
     """Get full ffprobe JSON output for a file."""
     cmd = [
         "ffprobe",
@@ -34,7 +35,8 @@ def probe_json(path: Path) -> dict:
         str(path),
     ]
     r = subprocess.run(cmd, capture_output=True, text=True)
-    return json.loads(r.stdout)
+    result: dict[str, Any] = json.loads(r.stdout)
+    return result
 
 
 def extract_audio(

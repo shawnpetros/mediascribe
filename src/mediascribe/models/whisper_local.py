@@ -51,7 +51,7 @@ def transcribe_chunk(
     compute_type: str = "int8",
     retry: int = 0,
     word_timestamps: bool = True,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Transcribe a single audio chunk.
 
     Args:
@@ -96,7 +96,7 @@ def transcribe_chunk(
 
     gen, _info = model.transcribe(str(chunk_path), **params)
 
-    segments: list[dict] = []
+    segments: list[dict[str, Any]] = []
     for seg in gen:
         text = seg.text.strip()
         if not text:

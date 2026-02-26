@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 from pathlib import Path
+from typing import Any
 
 from textual.app import ComposeResult
 from textual.containers import Vertical
@@ -11,7 +12,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Label, Log, ProgressBar, Static
 
 
-class PipelineScreen(Screen):
+class PipelineScreen(Screen[None]):
     """Live pipeline execution with progress and log output."""
 
     DEFAULT_CSS = """
@@ -52,7 +53,7 @@ class PipelineScreen(Screen):
     }
     """
 
-    def __init__(self, files: list[Path], config: dict) -> None:
+    def __init__(self, files: list[Path], config: dict[str, Any]) -> None:
         super().__init__()
         self.files = files
         self.config = config
@@ -107,7 +108,7 @@ class PipelineScreen(Screen):
         from dotenv import load_dotenv
 
         from mediascribe.core.config import MediascribeSettings
-        from mediascribe.core.events import EventBus, EventType, PipelineEvent
+        from mediascribe.core.events import EventBus, EventHandler, EventType, PipelineEvent
         from mediascribe.core.job import Job
         from mediascribe.core.pipeline import Pipeline
         from mediascribe.steps.analyze import AnalyzeStep
@@ -148,7 +149,7 @@ class PipelineScreen(Screen):
 
             events = EventBus()
 
-            def make_handler(base: float, frange: float, idx: int):
+            def make_handler(base: float, frange: float, idx: int) -> EventHandler:
                 def handler(event: PipelineEvent) -> None:
                     match event.type:
                         case EventType.STEP_START:

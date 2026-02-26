@@ -12,7 +12,7 @@ from textual.widgets import Button, Label, Static
 from mediascribe import __version__
 
 
-class WelcomeScreen(Screen):
+class WelcomeScreen(Screen[None]):
     """First screen shown on launch. Checks dependencies and offers navigation."""
 
     DEFAULT_CSS = """

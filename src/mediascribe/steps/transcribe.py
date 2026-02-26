@@ -15,6 +15,7 @@ import shutil
 import time
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.events import EventBus, EventType, PipelineEvent
@@ -30,7 +31,7 @@ from mediascribe.utils.ffmpeg import probe_duration, split_audio
 MAX_RETRIES = 3
 
 
-def validate_segments(segs: list[dict]) -> tuple[bool, str]:
+def validate_segments(segs: list[dict[str, Any]]) -> tuple[bool, str]:
     """Check for hallucination patterns in transcription output.
 
     Returns:
@@ -93,7 +94,7 @@ def _text_similar(a: str, b: str, threshold: float = 0.7) -> bool:
     return (overlap / total) >= threshold if total else True
 
 
-def _deduplicate_segments(segments: list[dict]) -> list[dict]:
+def _deduplicate_segments(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Sort and deduplicate segments at chunk boundaries.
 
     With overlapping chunks, the same speech may be transcribed in both
@@ -103,7 +104,7 @@ def _deduplicate_segments(segments: list[dict]) -> list[dict]:
       3. Exact text still on screen (prev not yet ended) → skip
     """
     segments.sort(key=lambda s: s["start"])
-    deduped: list[dict] = []
+    deduped: list[dict[str, Any]] = []
 
     for s in segments:
         if deduped:
@@ -132,9 +133,9 @@ def _deduplicate_segments(segments: list[dict]) -> list[dict]:
     return deduped
 
 
-def _clean_segments(segments: list[dict]) -> list[dict]:
+def _clean_segments(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Remove artifacts and clean up Whisper output."""
-    clean: list[dict] = []
+    clean: list[dict[str, Any]] = []
     prev_text = ""
 
     for s in segments:
@@ -159,7 +160,7 @@ def _transcribe_local(
     settings: MediascribeSettings,
     events: EventBus,
     stem: str,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Chunked local transcription with overlap, loop detection, and retries.
 
     Chunks overlap by ``chunk_overlap_sec`` so sentences at boundaries are
@@ -181,7 +182,7 @@ def _transcribe_local(
     )
 
     # Transcribe each chunk
-    all_segments: list[dict] = []
+    all_segments: list[dict[str, Any]] = []
     chunk_times: list[float] = []
 
     for ci, (chunk_path, offset) in enumerate(zip(chunks, offsets, strict=True)):
@@ -227,7 +228,7 @@ def _transcribe_local(
 
         if segs is None:
             events.warn("All retries failed — using last attempt", step="transcribe")
-            segs = attempt  # type: ignore[assignment]
+            segs = attempt
 
         ct_elapsed = time.time() - ct0
         chunk_times.append(ct_elapsed)
@@ -258,7 +259,7 @@ def _transcribe_api(
     wav_path: Path,
     settings: MediascribeSettings,
     events: EventBus,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Transcribe via OpenAI Whisper API."""
     from mediascribe.models.openai_client import get_client
     from mediascribe.models.whisper_api import transcribe_via_api

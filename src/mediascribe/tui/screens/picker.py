@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 
 from textual.app import ComposeResult
@@ -27,11 +28,11 @@ MEDIA_EXTENSIONS = {
 class MediaDirectoryTree(DirectoryTree):
     """Directory tree filtered to show only media files and directories."""
 
-    def filter_paths(self, paths: list[Path]) -> list[Path]:
+    def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
         return [p for p in paths if p.is_dir() or p.suffix.lower() in MEDIA_EXTENSIONS]
 
 
-class PickerScreen(Screen):
+class PickerScreen(Screen[None]):
     """File/folder picker for selecting media files to process."""
 
     DEFAULT_CSS = """

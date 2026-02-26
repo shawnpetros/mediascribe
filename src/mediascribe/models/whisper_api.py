@@ -7,6 +7,7 @@ Faster, no local GPU needed, but costs ~$0.006/min.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from openai import OpenAI
 
@@ -17,7 +18,7 @@ def transcribe_via_api(
     audio_path: Path,
     client: OpenAI | None = None,
     language: str | None = None,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Transcribe an audio file via OpenAI's Whisper API.
 
     Args:
@@ -41,19 +42,16 @@ def transcribe_via_api(
 
     try:
         with open(upload_path, "rb") as f:
-            params = {
-                "model": "whisper-1",
-                "file": f,
-                "response_format": "verbose_json",
-                "timestamp_granularities": ["segment"],
-            }
-            if language:
-                params["language"] = language
+            resp = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=f,
+                response_format="verbose_json",
+                timestamp_granularities=["segment"],
+                language=language or "",
+            )
 
-            resp = client.audio.transcriptions.create(**params)
-
-        segments: list[dict] = []
-        for s in resp.segments:
+        segments: list[dict[str, Any]] = []
+        for s in resp.segments or []:
             if isinstance(s, dict):
                 text, start, end = s["text"].strip(), s["start"], s["end"]
             else:

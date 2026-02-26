@@ -7,6 +7,7 @@ and manipulating SubRip (.srt) subtitle files.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from pysrt import SubRipFile, SubRipItem, SubRipTime
 
@@ -25,7 +26,7 @@ def srt_time(sec: float) -> SubRipTime:
 
 def srt_to_sec(t: SubRipTime) -> float:
     """Convert SubRipTime to float seconds."""
-    return t.hours * 3600 + t.minutes * 60 + t.seconds + t.milliseconds / 1000
+    return float(t.hours * 3600 + t.minutes * 60 + t.seconds + t.milliseconds / 1000)
 
 
 def fmt_ts(sec: float) -> str:
@@ -63,7 +64,7 @@ def segments_to_srt(segments: list[Segment], use_translation: bool = False) -> S
     return srt
 
 
-def dicts_to_srt(segments: list[dict]) -> SubRipFile:
+def dicts_to_srt(segments: list[dict[str, Any]]) -> SubRipFile:
     """Convert raw dicts [{start, end, text}] to SubRipFile.
 
     Useful when working with Whisper output before converting to Segment objects.

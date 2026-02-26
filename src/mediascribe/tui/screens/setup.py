@@ -8,7 +8,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Static
 
 
-class SetupScreen(Screen):
+class SetupScreen(Screen[None]):
     """API key entry and validation screen."""
 
     DEFAULT_CSS = """

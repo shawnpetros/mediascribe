@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from mediascribe.core.job import Job
 
 
-def job_to_json(job: Job) -> dict:
+def job_to_json(job: Job) -> dict[str, Any]:
     """Convert a completed job to a structured JSON-serializable dict."""
     return {
         "metadata": {

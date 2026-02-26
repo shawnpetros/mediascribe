@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from rich.console import Console
 
-from mediascribe.core.config import MediascribeSettings
-from mediascribe.core.events import EventBus, EventType, PipelineEvent
+from mediascribe.core.config import MediascribeSettings, TranscriptionMode
+from mediascribe.core.events import EventBus, EventHandler, EventType, PipelineEvent
 from mediascribe.core.job import Job
 from mediascribe.core.pipeline import Pipeline
 from mediascribe.steps.analyze import AnalyzeStep
@@ -22,7 +23,7 @@ from mediascribe.steps.translate import TranslateStep
 console = Console()
 
 
-def _make_event_handler() -> callable:
+def _make_event_handler() -> EventHandler:
     """Create a Rich-based event handler for the CLI."""
 
     def handler(event: PipelineEvent) -> None:
@@ -94,7 +95,7 @@ def run_pipeline_for_file(
         target_language=target_language,
         translation_model=translation_model,
         whisper_model=whisper_model,
-        transcription_mode=transcription_mode,
+        transcription_mode=cast(TranscriptionMode, transcription_mode),
         custom_instructions=custom_instructions,
         enable_review_pass=enable_review,
         output_dir=output_dir,

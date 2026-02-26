@@ -80,7 +80,7 @@ def review_translations(
             )
 
         try:
-            result = call_openai_json(client, model, review_prompt, batch, temp=0.2)
+            result = call_openai_json(client, model, review_prompt, batch, temperature=0.2)
             for item in result:
                 reviewed[item["id"]] = item["text"]
         except (json.JSONDecodeError, KeyError):

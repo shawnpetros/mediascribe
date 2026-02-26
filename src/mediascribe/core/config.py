@@ -16,6 +16,8 @@ from typing import Literal
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+TranscriptionMode = Literal["local", "api", "auto"]
+
 
 def _default_config_dir() -> Path:
     """XDG-compliant config directory."""
@@ -41,7 +43,7 @@ class MediascribeSettings(BaseSettings):
     huggingface_token: SecretStr | None = None
 
     # ── Transcription ────────────────────────────────────
-    transcription_mode: Literal["local", "api", "auto"] = "auto"
+    transcription_mode: TranscriptionMode = "auto"
     whisper_model: str = "large-v3"
     whisper_device: str = "auto"
     whisper_compute: str = "int8"
