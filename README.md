@@ -21,12 +21,14 @@ pip install mediascribe[diarize]   # speaker diarization (pyannote.audio)
 pip install mediascribe[all]       # everything
 ```
 
-### From Homebrew
+### From Homebrew (after first PyPI release)
 
 ```bash
 brew tap shawnpetros/mediascribe
 brew install mediascribe
 ```
+
+> **Note:** This requires the tap repo to exist — see [Publishing > Homebrew](#homebrew) for setup instructions.
 
 ### From source
 
@@ -182,19 +184,27 @@ make publish         # upload to PyPI
 
 ### Homebrew
 
-A formula template is included at `homebrew/mediascribe.rb`. To set up a tap:
+Homebrew install requires two things: the package on PyPI and a tap repo on GitHub.
 
-1. Create a repo `github.com/shawnpetros/homebrew-mediascribe`
-2. After publishing to PyPI, update the formula:
+**One-time setup:**
+
+1. Publish to PyPI first (manual or via tag — see above)
+2. Create a new GitHub repo named **`shawnpetros/homebrew-mediascribe`** with a `Formula/` directory
+3. Update the formula template with the real SHA256 from PyPI:
    ```bash
    ./scripts/update-homebrew-formula.sh 0.1.0
    ```
-3. Copy `homebrew/mediascribe.rb` to `Formula/mediascribe.rb` in the tap repo
-4. Users install via:
-   ```bash
-   brew tap shawnpetros/mediascribe
-   brew install mediascribe
-   ```
+4. Copy `homebrew/mediascribe.rb` into the tap repo at `Formula/mediascribe.rb`
+5. Push the tap repo
+
+**After setup, users install via:**
+
+```bash
+brew tap shawnpetros/mediascribe
+brew install mediascribe
+```
+
+**On each new release**, repeat steps 3-4 with the new version number.
 
 ## Architecture
 
