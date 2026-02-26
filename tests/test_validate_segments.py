@@ -9,10 +9,8 @@ Covers:
 - Edge cases around thresholds
 """
 
-import pytest
 
 from mediascribe.steps.transcribe import validate_segments
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

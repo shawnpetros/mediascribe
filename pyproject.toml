@@ -74,6 +74,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+ignore = ["E501"]  # Line length; many Typer help strings exceed 100 chars
 
 [tool.mypy]
 python_version = "3.12"

@@ -11,22 +11,18 @@ which are written to a source-language SRT file with optimized timing.
 
 from __future__ import annotations
 
-import re
 import shutil
 import time
 from collections import Counter
 from pathlib import Path
 
-from pysrt import SubRipFile, SubRipItem
-
 from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.events import EventBus, EventType, PipelineEvent
 from mediascribe.core.job import Job, Segment
-from mediascribe.formats.srt import dicts_to_srt, fmt_ts, save_srt, srt_time
+from mediascribe.formats.srt import dicts_to_srt, fmt_ts, save_srt
 from mediascribe.steps.base import PipelineStep, StepResult
 from mediascribe.steps.timing import fix_subtitle_timing
 from mediascribe.utils.ffmpeg import probe_duration, split_audio
-
 
 # ── Validation ───────────────────────────────────────────────────────────────
 
@@ -191,7 +187,7 @@ def _transcribe_local(
     all_segments: list[dict] = []
     chunk_times: list[float] = []
 
-    for ci, (chunk_path, offset) in enumerate(zip(chunks, offsets)):
+    for ci, (chunk_path, offset) in enumerate(zip(chunks, offsets, strict=True)):
         end_sec = min(offset + chunk_sec, dur)
         label = f"Chunk {ci + 1}/{len(chunks)}  {fmt_ts(offset)}→{fmt_ts(end_sec)}"
 
@@ -265,8 +261,8 @@ def _transcribe_api(
     events: EventBus,
 ) -> list[dict]:
     """Transcribe via OpenAI Whisper API."""
-    from mediascribe.models.whisper_api import transcribe_via_api
     from mediascribe.models.openai_client import get_client
+    from mediascribe.models.whisper_api import transcribe_via_api
 
     dur = probe_duration(wav_path)
     cost = dur / 60 * 0.006
@@ -380,7 +376,6 @@ class TranscribeStep(PipelineStep):
         """Skip if SRT already exists."""
         from mediascribe.formats.srt import srt_to_segments
 
-        lang = "unknown"  # We don't have settings here, check any matching SRT
         # Look for any *_*.srt file matching the stem
         for p in job.output_dir.glob(f"{job.stem}_*.srt"):
             if "_en" not in p.stem:  # Skip translation SRTs

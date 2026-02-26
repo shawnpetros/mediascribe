@@ -9,12 +9,10 @@ Covers:
 """
 
 import pytest
-
 from pysrt import SubRipFile, SubRipItem
 
 from mediascribe.formats.srt import srt_time, srt_to_sec
 from mediascribe.steps.timing import estimate_display_duration, fix_subtitle_timing
-
 
 # ── estimate_display_duration ────────────────────────────────────────────────
 

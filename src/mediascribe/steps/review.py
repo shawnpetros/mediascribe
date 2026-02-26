@@ -9,7 +9,6 @@ This is the final quality gate before output.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from pysrt import SubRipFile, SubRipItem
 
@@ -20,7 +19,6 @@ from mediascribe.formats.srt import read_srt, save_srt
 from mediascribe.models.openai_client import call_openai_json, get_client
 from mediascribe.models.prompts import TEMPLATES, render_prompt
 from mediascribe.steps.base import PipelineStep, StepResult
-
 
 # ── Review Logic ─────────────────────────────────────────────────────────────
 
@@ -85,7 +83,7 @@ def review_translations(
                 reviewed[item["id"]] = item["text"]
         except (json.JSONDecodeError, KeyError):
             if events:
-                events.warn(f"Parse error in review batch — keeping drafts", step="review")
+                events.warn("Parse error in review batch — keeping drafts", step="review")
             for item in batch:
                 reviewed[item["id"]] = item["en"]
 

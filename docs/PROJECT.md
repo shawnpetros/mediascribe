@@ -99,8 +99,8 @@
 - [x] .gitignore
 - [x] Git repo initialized
 - [x] Basic test structure
-- [ ] CI config (GitHub Actions)
-- [ ] Dev environment setup docs
+- [x] CI config (GitHub Actions)
+- [x] Dev environment setup docs
 
 ### 1.2 Core Abstractions
 - [x] core/config.py — Pydantic settings with .env + XDG support
@@ -139,8 +139,8 @@
 - [x] cli/app.py — Typer app with transcribe, batch, config, tui commands
 - [x] cli/output.py — Rich event handler + pipeline runner
 - [x] End-to-end pipeline wiring (detect -> normalize -> transcribe -> translate -> review)
-- [ ] mediascribe translate <srt> — standalone translate command
-- [ ] mediascribe config set/get/list — config management
+- [x] mediascribe translate <srt> — standalone translate command
+- [x] mediascribe config set/get/list — config management
 
 ---
 

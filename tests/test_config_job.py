@@ -10,7 +10,6 @@ Covers:
 """
 
 import os
-import pytest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -22,7 +21,6 @@ from mediascribe.core.job import (
     MediaType,
     Segment,
 )
-
 
 # ── MediascribeSettings ─────────────────────────────────────────────────────
 

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
+from typing import Literal, cast
 
 from rich.console import Console
 
@@ -10,6 +12,9 @@ from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.events import EventBus, EventType, PipelineEvent
 from mediascribe.core.job import Job
 from mediascribe.core.pipeline import Pipeline
+from mediascribe.formats.json_export import save_json
+from mediascribe.formats.transcript import save_transcript
+from mediascribe.formats.vtt import save_vtt
 from mediascribe.steps.detect import DetectStep
 from mediascribe.steps.normalize import NormalizeStep
 from mediascribe.steps.review import ReviewStep
@@ -19,7 +24,7 @@ from mediascribe.steps.translate import TranslateStep
 console = Console()
 
 
-def _make_event_handler() -> callable:
+def _make_event_handler() -> Callable[[PipelineEvent], None]:
     """Create a Rich-based event handler for the CLI."""
 
     def handler(event: PipelineEvent) -> None:
@@ -62,6 +67,44 @@ def _make_event_handler() -> callable:
     return handler
 
 
+def _export_additional_formats(job: Job, settings: MediascribeSettings) -> None:
+    """Export job segments to VTT, transcript, JSON per output_formats config."""
+    if not job.segments:
+        return
+
+    use_translation = bool(settings.target_language and any(s.translation for s in job.segments))
+    lang = (
+        settings.target_language
+        if use_translation
+        else (settings.source_language or (job.media_info.language if job.media_info else None) or "unknown")
+    )
+    base_name = f"{job.stem}_{lang}"
+
+    for fmt in settings.output_formats:
+        fmt_lower = fmt.lower()
+        if fmt_lower == "srt":
+            # SRT is already written by transcribe/review steps
+            continue
+        if fmt_lower == "vtt":
+            path = job.output_dir / f"{base_name}.vtt"
+            save_vtt(job.segments, path, use_translation=use_translation)
+            console.print(f"    [dim]Exported VTT → {path.name}[/dim]")
+        elif fmt_lower in ("transcript", "txt"):
+            path = job.output_dir / f"{base_name}.txt"
+            save_transcript(
+                job.segments,
+                path,
+                use_translation=use_translation,
+                include_timestamps=True,
+                include_speakers=True,
+            )
+            console.print(f"    [dim]Exported transcript → {path.name}[/dim]")
+        elif fmt_lower == "json":
+            path = job.output_dir / f"{job.stem}.json"
+            save_json(job, path)
+            console.print(f"    [dim]Exported JSON → {path.name}[/dim]")
+
+
 def run_pipeline_for_file(
     input_path: Path,
     output_dir: Path,
@@ -73,6 +116,7 @@ def run_pipeline_for_file(
     transcription_mode: str = "auto",
     custom_instructions: str = "",
     enable_review: bool = True,
+    output_formats: list[str] | None = None,
 ) -> None:
     """Run the full pipeline on a single file with CLI output.
 
@@ -87,10 +131,11 @@ def run_pipeline_for_file(
         target_language=target_language,
         translation_model=translation_model,
         whisper_model=whisper_model,
-        transcription_mode=transcription_mode,
+        transcription_mode=cast(Literal["local", "api", "auto"], transcription_mode or "auto"),
         custom_instructions=custom_instructions,
         enable_review_pass=enable_review,
         output_dir=output_dir,
+        output_formats=output_formats or ["srt"],
     )
     settings.ensure_dirs()
 
@@ -130,9 +175,12 @@ def run_pipeline_for_file(
         console.print(f"\n[bold red]Pipeline failed: {result.error}[/bold red]")
         raise SystemExit(1)
 
+    # Multi-format export (VTT, transcript, JSON) — SRT is already written by pipeline
+    _export_additional_formats(job, settings)
+
     # Summary
     console.print(f"\n{'─' * 60}")
-    console.print(f"  [bold]Output:[/bold]")
+    console.print("  [bold]Output:[/bold]")
     for p in sorted(output_dir.glob(f"{job.stem}*")):
         console.print(f"    {p.name}")
     console.print(f"{'─' * 60}")

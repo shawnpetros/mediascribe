@@ -10,7 +10,6 @@ Produces a draft translation SRT with the same timing as the source.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from pysrt import SubRipFile, SubRipItem
 
@@ -21,7 +20,6 @@ from mediascribe.formats.srt import read_srt, save_srt
 from mediascribe.models.openai_client import call_openai_json, get_client
 from mediascribe.models.prompts import TEMPLATES, render_prompt
 from mediascribe.steps.base import PipelineStep, StepResult
-
 
 # ── Translation Logic ────────────────────────────────────────────────────────
 
@@ -181,6 +179,6 @@ class TranslateStep(PipelineStep):
 
     def can_skip(self, job: Job) -> bool:
         """Skip if draft translation SRT already exists."""
-        for p in job.output_dir.glob(f"{job.stem}_*_draft.srt"):
+        for _ in job.output_dir.glob(f"{job.stem}_*_draft.srt"):
             return True
         return False

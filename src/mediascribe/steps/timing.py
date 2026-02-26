@@ -19,7 +19,6 @@ from mediascribe.core.job import Job
 from mediascribe.formats.srt import srt_time, srt_to_sec
 from mediascribe.steps.base import PipelineStep, StepResult
 
-
 # ── Timing Logic (usable standalone, outside of step) ────────────────────────
 
 

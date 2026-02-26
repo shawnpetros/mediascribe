@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from mediascribe.core.job import Job
@@ -17,7 +17,7 @@ def job_to_json(job: Job) -> dict:
             "duration_sec": job.media_info.duration_sec,
             "source_language": job.media_info.language,
             "media_type": job.media_info.media_type.value,
-            "processed_at": datetime.now(timezone.utc).isoformat(),
+            "processed_at": datetime.now(UTC).isoformat(),
         },
         "segments": [
             {

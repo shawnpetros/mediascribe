@@ -9,16 +9,13 @@ Covers:
 - EventBus subscription and delivery
 """
 
-import pytest
 from pathlib import Path
-from dataclasses import dataclass
 
 from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.events import EventBus, EventType, PipelineEvent
 from mediascribe.core.job import Job, JobStatus
 from mediascribe.core.pipeline import Pipeline
 from mediascribe.steps.base import PipelineStep, StepResult
-
 
 # ── Mock Steps ───────────────────────────────────────────────────────────────
 

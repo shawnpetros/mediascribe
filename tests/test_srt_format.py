@@ -9,10 +9,9 @@ Covers:
 - Edge cases: empty segments, translation mode, empty text filtering
 """
 
-import pytest
 from pathlib import Path
 
-from pysrt import SubRipFile
+import pytest
 
 from mediascribe.core.job import Segment
 from mediascribe.formats.srt import (
@@ -25,7 +24,6 @@ from mediascribe.formats.srt import (
     srt_to_sec,
     srt_to_segments,
 )
-
 
 # ── Time conversion roundtrip ────────────────────────────────────────────────
 

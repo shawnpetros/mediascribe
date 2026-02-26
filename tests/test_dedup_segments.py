@@ -10,10 +10,8 @@ Covers:
 - _text_similar helper edge cases
 """
 
-import pytest
 
 from mediascribe.steps.transcribe import _deduplicate_segments, _text_similar
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

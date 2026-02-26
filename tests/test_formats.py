@@ -11,13 +11,11 @@ Covers:
 """
 
 import json
-import pytest
 from pathlib import Path
 
 from mediascribe.core.job import Job, MediaInfo, MediaType, Segment
-from mediascribe.formats.vtt import _vtt_timestamp, segments_to_vtt, save_vtt
 from mediascribe.formats.json_export import job_to_json, save_json
-
+from mediascribe.formats.vtt import _vtt_timestamp, save_vtt, segments_to_vtt
 
 # ── VTT Timestamps ──────────────────────────────────────────────────────────
 
