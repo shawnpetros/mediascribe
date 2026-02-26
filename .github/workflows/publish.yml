@@ -110,3 +110,93 @@ jobs:
           gh release create "$TAG" dist/* \
             --title "mediascribe $TAG" \
             --generate-notes
+
+  # ── Update Homebrew tap formula ─────────────────────────
+  update-homebrew:
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    # Only runs if HOMEBREW_TAP_TOKEN secret is configured
+    if: vars.HOMEBREW_TAP_REPO != '' || true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Get version and compute SHA256
+        id: meta
+        run: |
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          URL="https://files.pythonhosted.org/packages/source/m/mediascribe/mediascribe-${VERSION}.tar.gz"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+          # Wait briefly for PyPI to propagate, then download and hash
+          sleep 30
+          curl -sSfL "$URL" -o /tmp/sdist.tar.gz
+          SHA256=$(sha256sum /tmp/sdist.tar.gz | awk '{print $1}')
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+
+          echo "Version: $VERSION"
+          echo "URL: $URL"
+          echo "SHA256: $SHA256"
+
+      - name: Update formula in tap repo
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_REPO: ${{ vars.HOMEBREW_TAP_REPO || 'shawnpetros/homebrew-mediascribe' }}
+        if: env.HOMEBREW_TAP_TOKEN != ''
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          URL="${{ steps.meta.outputs.url }}"
+          SHA256="${{ steps.meta.outputs.sha256 }}"
+
+          # Clone the tap repo
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${TAP_REPO}.git" /tmp/tap
+          mkdir -p /tmp/tap/Formula
+
+          # Generate updated formula
+          cat > /tmp/tap/Formula/mediascribe.rb << EOF
+          class Mediascribe < Formula
+            include Language::Python::Virtualenv
+
+            desc "TUI-first tool for transcribing, translating, and analyzing audio/video media"
+            homepage "https://github.com/shawnpetros/mediascribe"
+            url "${URL}"
+            sha256 "${SHA256}"
+            license "MIT"
+            head "https://github.com/shawnpetros/mediascribe.git", branch: "main"
+
+            depends_on "python@3.12"
+            depends_on "ffmpeg"
+
+            def install
+              virtualenv_install_with_resources
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/mediascribe --version")
+            end
+          end
+          EOF
+
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' /tmp/tap/Formula/mediascribe.rb
+
+          # Commit and push
+          cd /tmp/tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/mediascribe.rb
+          git diff --cached --quiet && echo "No changes to formula" && exit 0
+          git commit -m "mediascribe ${VERSION}"
+          git push
+
+      - name: Skip notice
+        if: env.HOMEBREW_TAP_TOKEN == ''
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: echo "Skipping Homebrew update — HOMEBREW_TAP_TOKEN secret not configured"

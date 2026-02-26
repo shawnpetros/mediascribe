@@ -154,57 +154,53 @@ make help             # show all targets
 
 ## Publishing
 
-### PyPI (automated)
+### Fully automated (recommended)
 
-Releases are published automatically via GitHub Actions when a version tag is pushed:
+The entire release pipeline is automated. To ship a new version:
 
 ```bash
-# 1. Update version in pyproject.toml and src/mediascribe/__init__.py
-# 2. Commit and tag
+# 1. Bump version in both files
+#    - pyproject.toml:  version = "0.2.0"
+#    - src/mediascribe/__init__.py:  __version__ = "0.2.0"
+# 2. Commit and merge to main
 git add -A && git commit -m "release: v0.2.0"
-git tag v0.2.0
-git push && git push --tags
+git push
 ```
 
-The publish workflow will:
-1. Run the full CI suite (tests, lint, typecheck)
-2. Build sdist and wheel
-3. Publish to PyPI via trusted publisher (OIDC)
-4. Create a GitHub Release with generated notes
+What happens automatically on merge to main:
+1. **release.yml** detects the version change in `pyproject.toml`, creates a `v0.2.0` tag
+2. **publish.yml** triggers on the new tag:
+   - Runs full CI (tests, lint, typecheck)
+   - Builds sdist + wheel
+   - Smoke tests the built wheel (CLI loads, commands respond)
+   - Publishes to PyPI via trusted publisher (OIDC)
+   - Creates a GitHub Release with auto-generated notes
+   - Updates the Homebrew tap formula with the new version + SHA256
 
-**Setup required:** Configure PyPI trusted publisher in your PyPI project settings to trust the `publish.yml` workflow from your GitHub repo.
+### One-time setup
 
-### PyPI (manual)
+**PyPI:** Configure trusted publisher in your [PyPI project settings](https://pypi.org/manage/project/mediascribe/settings/publishing/) to trust the `publish.yml` workflow from your GitHub repo.
 
-```bash
-make build-check     # build + validate
-make publish-test    # upload to TestPyPI first
-make publish         # upload to PyPI
-```
+**Homebrew tap:**
 
-### Homebrew
+1. Create a GitHub repo named **`shawnpetros/homebrew-mediascribe`** with a `Formula/` directory
+2. Add a repo secret `HOMEBREW_TAP_TOKEN` in the mediascribe repo — a [personal access token](https://github.com/settings/tokens) with `repo` scope on the tap repo
+3. Optionally set a repo variable `HOMEBREW_TAP_REPO` if the tap is at a different path (defaults to `shawnpetros/homebrew-mediascribe`)
 
-Homebrew install requires two things: the package on PyPI and a tap repo on GitHub.
-
-**One-time setup:**
-
-1. Publish to PyPI first (manual or via tag — see above)
-2. Create a new GitHub repo named **`shawnpetros/homebrew-mediascribe`** with a `Formula/` directory
-3. Update the formula template with the real SHA256 from PyPI:
-   ```bash
-   ./scripts/update-homebrew-formula.sh 0.1.0
-   ```
-4. Copy `homebrew/mediascribe.rb` into the tap repo at `Formula/mediascribe.rb`
-5. Push the tap repo
-
-**After setup, users install via:**
+After setup, users install via:
 
 ```bash
 brew tap shawnpetros/mediascribe
 brew install mediascribe
 ```
 
-**On each new release**, repeat steps 3-4 with the new version number.
+### Manual publishing
+
+```bash
+make build-check     # build + validate
+make publish-test    # upload to TestPyPI first
+make publish         # upload to PyPI
+```
 
 ## Architecture
 
