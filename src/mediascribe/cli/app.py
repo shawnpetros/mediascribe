@@ -3,9 +3,12 @@
 Usage:
     mediascribe transcribe video.mp4 --lang ja --translate en
     mediascribe transcribe podcast.mp3 --translate en --profile podcast
+    mediascribe translate subs.srt --target en --profile anime
     mediascribe batch ./videos/ --profile anime --translate en
+    mediascribe config show
     mediascribe config set openai_api_key sk-...
-    mediascribe tui  # Launch the full TUI (Phase 2)
+    mediascribe models list
+    mediascribe tui
 """
 
 from __future__ import annotations
@@ -19,7 +22,6 @@ from rich.console import Console
 
 from mediascribe import __version__
 
-# Force unbuffered output
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 
@@ -29,6 +31,10 @@ app = typer.Typer(
     no_args_is_help=True,
     rich_markup_mode="rich",
 )
+config_app = typer.Typer(help="View and manage configuration.")
+models_app = typer.Typer(help="Manage Whisper models.")
+app.add_typer(config_app, name="config")
+app.add_typer(models_app, name="models")
 console = Console()
 
 
@@ -85,6 +91,44 @@ def transcribe(
     )
 
 
+# ── translate (standalone) ───────────────────────────────────────────────────
+
+
+@app.command()
+def translate(
+    srt_file: Annotated[Path, typer.Argument(help="Source-language SRT file to translate")],
+    target: Annotated[str, typer.Option("--target", "-t", help="Target language (e.g., en, ja, es)")],
+    profile: Annotated[str, typer.Option("--profile", "-p", help="Prompt profile: general, anime, podcast, meeting")] = "general",
+    model: Annotated[str, typer.Option("--model", "-m", help="Translation model")] = "gpt-4.1",
+    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory (default: same as input)")] = Path(""),
+    custom: Annotated[str, typer.Option("--custom", help="Custom instructions for translation")] = "",
+    no_review: Annotated[bool, typer.Option("--no-review", help="Skip the review (second) pass")] = False,
+    batch_size: Annotated[int, typer.Option("--batch-size", help="Subtitles per API call")] = 15,
+) -> None:
+    """Translate an existing SRT file to another language."""
+    from mediascribe.cli.output import run_translate_srt
+
+    if not srt_file.exists():
+        console.print(f"[red]Error:[/red] File not found: {srt_file}")
+        raise typer.Exit(1)
+
+    if srt_file.suffix.lower() != ".srt":
+        console.print(f"[red]Error:[/red] Expected an .srt file, got: {srt_file.suffix}")
+        raise typer.Exit(1)
+
+    out_dir = output if str(output) else srt_file.parent
+    run_translate_srt(
+        srt_path=srt_file,
+        target_language=target,
+        output_dir=out_dir,
+        profile=profile,
+        translation_model=model,
+        custom_instructions=custom,
+        enable_review=not no_review,
+        batch_size=batch_size,
+    )
+
+
 # ── batch ────────────────────────────────────────────────────────────────────
 
 
@@ -106,7 +150,6 @@ def batch(
         console.print(f"[red]Error:[/red] Not a directory: {folder}")
         raise typer.Exit(1)
 
-    # Find all media files
     extensions = {".mp4", ".mkv", ".webm", ".avi", ".mov",
                   ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac"}
     files = sorted(f for f in folder.iterdir() if f.suffix.lower() in extensions)
@@ -139,11 +182,86 @@ def batch(
 # ── config ───────────────────────────────────────────────────────────────────
 
 
-@app.command()
-def config() -> None:
-    """View or edit configuration."""
-    console.print("[yellow]Config management — coming in Phase 2.[/yellow]")
-    console.print("For now, set OPENAI_API_KEY in your environment or .env file.")
+@config_app.callback(invoke_without_command=True)
+def config_default(ctx: typer.Context) -> None:
+    """View or manage configuration settings."""
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(config_show)
+
+
+@config_app.command("show")
+def config_show() -> None:
+    """Display current configuration."""
+    from mediascribe.cli.output import show_config
+
+    show_config()
+
+
+@config_app.command("set")
+def config_set(
+    key: Annotated[str, typer.Argument(help="Configuration key (e.g., openai_api_key)")],
+    value: Annotated[str, typer.Argument(help="Value to set")],
+) -> None:
+    """Set a configuration value in the user config file."""
+    from mediascribe.cli.output import set_config_value
+
+    set_config_value(key, value)
+
+
+@config_app.command("get")
+def config_get(
+    key: Annotated[str, typer.Argument(help="Configuration key to read")],
+) -> None:
+    """Get a specific configuration value."""
+    from mediascribe.cli.output import get_config_value
+
+    get_config_value(key)
+
+
+@config_app.command("list")
+def config_list() -> None:
+    """List all available configuration keys and their descriptions."""
+    from mediascribe.cli.output import list_config_keys
+
+    list_config_keys()
+
+
+@config_app.command("path")
+def config_path() -> None:
+    """Print the path to the user config file."""
+    from mediascribe.core.config import _default_config_dir
+
+    config_file = _default_config_dir() / "config.toml"
+    console.print(str(config_file))
+
+
+# ── models ───────────────────────────────────────────────────────────────────
+
+
+@models_app.command("list")
+def models_list() -> None:
+    """List available and downloaded Whisper models."""
+    from mediascribe.cli.output import list_whisper_models
+
+    list_whisper_models()
+
+
+@models_app.command("download")
+def models_download(
+    model_name: Annotated[str, typer.Argument(help="Model to download (e.g., large-v3, medium, small, base, tiny)")] = "large-v3",
+) -> None:
+    """Download a Whisper model to the local cache."""
+    from mediascribe.cli.output import download_whisper_model
+
+    download_whisper_model(model_name)
+
+
+@models_app.command("path")
+def models_path() -> None:
+    """Print the model cache directory."""
+    from mediascribe.utils.paths import xdg_cache_dir
+
+    console.print(str(xdg_cache_dir() / "models"))
 
 
 # ── tui ──────────────────────────────────────────────────────────────────────
@@ -152,8 +270,14 @@ def config() -> None:
 @app.command()
 def tui() -> None:
     """Launch the interactive TUI."""
-    console.print("[yellow]TUI — coming in Phase 2.[/yellow]")
-    console.print("Use the CLI commands for now: mediascribe transcribe <file>")
+    try:
+        from mediascribe.tui.app import MediascribeApp
+        app_instance = MediascribeApp()
+        app_instance.run()
+    except ImportError:
+        console.print("[red]Error:[/red] TUI dependencies not installed.")
+        console.print("Install with: [bold]pip install mediascribe\\[tui][/bold]")
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

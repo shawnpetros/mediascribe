@@ -1,1 +1,1 @@
-"""TUI screens — welcome, setup, picker, config, run, results."""
+"""TUI screens for the mediascribe application."""
