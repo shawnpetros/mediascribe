@@ -324,7 +324,7 @@ def show_config() -> None:
     table.add_column("Value", style="green")
     table.add_column("Source", style="dim")
 
-    for field_name in sorted(settings.model_fields):
+    for field_name in sorted(MediascribeSettings.model_fields):
         if field_name in ("config_dir",):
             continue
         value = getattr(settings, field_name)
@@ -398,7 +398,7 @@ def list_config_keys() -> None:
     table.add_column("Default", style="dim")
 
     settings = MediascribeSettings()
-    for field_name in sorted(settings.model_fields):
+    for field_name in sorted(MediascribeSettings.model_fields):
         if field_name in ("config_dir",):
             continue
         desc = _CONFIG_DESCRIPTIONS.get(field_name, "")
