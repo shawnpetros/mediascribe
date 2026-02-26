@@ -41,13 +41,18 @@ def version_callback(value: bool) -> None:
 
 
 @app.callback()
-def main(
+def _app_callback(
     version: Annotated[
         bool | None,
         typer.Option("--version", "-V", callback=version_callback, is_eager=True),
     ] = None,
 ) -> None:
     """mediascribe — Transcribe, translate, and analyze audio/video media."""
+
+
+def main() -> None:
+    """Entry point for the mediascribe CLI."""
+    app()
 
 
 # ── transcribe ───────────────────────────────────────────────────────────────
