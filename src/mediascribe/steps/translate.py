@@ -129,8 +129,14 @@ class TranslateStep(PipelineStep):
         source_srt_path = job.output_dir / f"{job.stem}_{source_lang}.srt"
         if not source_srt_path.exists():
             # Try to find any source SRT
-            candidates = [p for p in job.output_dir.glob(f"{job.stem}_*.srt")
-                          if "_en" not in p.stem and "_draft" not in p.stem]
+            candidates: list[Path] = []
+            for p in job.output_dir.glob(f"{job.stem}_*.srt"):
+                stem = p.stem
+                if stem.endswith("_draft"):
+                    continue
+                if stem.endswith(f"_{settings.target_language}"):
+                    continue
+                candidates.append(p)
             if candidates:
                 source_srt_path = candidates[0]
             else:
@@ -139,15 +145,17 @@ class TranslateStep(PipelineStep):
         target = settings.target_language
         draft_path = job.output_dir / f"{job.stem}_{target}_draft.srt"
 
-        # Get prompt template (default to "general" if profile not found)
-        # The profile name could be stored in settings.custom_instructions metadata
-        # For now, use "general" template. Profiles are a Phase 2 feature.
-        template = TEMPLATES.get("general", TEMPLATES["general"])
+        # Get prompt template (fall back safely to "general")
+        profile = settings.translation_profile
+        template = TEMPLATES.get(profile, TEMPLATES["general"])
         system_prompt, _ = render_prompt(
             template, target, settings.custom_instructions,
         )
 
-        events.log(f"Model: {settings.translation_model}", step=self.name)
+        events.log(
+            f"Model: {settings.translation_model} | Profile: {template.name}",
+            step=self.name,
+        )
 
         source_srt = read_srt(source_srt_path)
         api_key = settings.openai_api_key.get_secret_value() if settings.openai_api_key else None

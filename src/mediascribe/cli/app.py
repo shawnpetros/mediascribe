@@ -10,11 +10,13 @@ Usage:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import typer
+from pydantic import SecretStr
 from rich.console import Console
 
 from mediascribe import __version__
@@ -30,6 +32,27 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 console = Console()
+config_app = typer.Typer(
+    help="Persist and inspect mediascribe configuration values.",
+    no_args_is_help=True,
+)
+app.add_typer(config_app, name="config")
+
+
+def _normalize_key(key: str) -> str:
+    return key.strip().lower().replace("-", "_")
+
+
+def _render_value(value: Any) -> str:
+    if isinstance(value, SecretStr):
+        return value.get_secret_value()
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, list):
+        return json.dumps(value, ensure_ascii=False)
+    if value is None:
+        return "null"
+    return str(value)
 
 
 def version_callback(value: bool) -> None:
@@ -54,14 +77,14 @@ def main(
 @app.command()
 def transcribe(
     file: Annotated[Path, typer.Argument(help="Input audio or video file")],
-    lang: Annotated[str, typer.Option("--lang", "-l", help="Source language code (e.g., ja, en, es). Auto-detect if omitted")] = "",
-    translate: Annotated[str, typer.Option("--translate", "-t", help="Target language for translation (e.g., en)")] = "",
-    profile: Annotated[str, typer.Option("--profile", "-p", help="Prompt profile: general, anime, podcast, meeting")] = "general",
-    model: Annotated[str, typer.Option("--model", "-m", help="Translation model")] = "gpt-4.1",
-    whisper_model: Annotated[str, typer.Option("--whisper-model", help="Whisper model size")] = "large-v3",
-    mode: Annotated[str, typer.Option("--mode", help="Transcription mode: local, api, auto")] = "auto",
-    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory")] = Path("./output"),
-    custom: Annotated[str, typer.Option("--custom", help="Custom instructions for translation")] = "",
+    lang: Annotated[str | None, typer.Option("--lang", "-l", help="Source language code (e.g., ja, en, es). Auto-detect if omitted")] = None,
+    translate: Annotated[str | None, typer.Option("--translate", "-t", help="Target language for translation (e.g., en)")] = None,
+    profile: Annotated[str | None, typer.Option("--profile", "-p", help="Prompt profile: general, anime, podcast, meeting")] = None,
+    model: Annotated[str | None, typer.Option("--model", "-m", help="Translation model")] = None,
+    whisper_model: Annotated[str | None, typer.Option("--whisper-model", help="Whisper model size")] = None,
+    mode: Annotated[str | None, typer.Option("--mode", help="Transcription mode: local, api, auto")] = None,
+    output: Annotated[Path | None, typer.Option("--output", "-o", help="Output directory")] = None,
+    custom: Annotated[str | None, typer.Option("--custom", help="Custom instructions for translation")] = None,
     no_review: Annotated[bool, typer.Option("--no-review", help="Skip the review (second) pass")] = False,
 ) -> None:
     """Transcribe (and optionally translate) a single file."""
@@ -74,14 +97,14 @@ def transcribe(
     run_pipeline_for_file(
         input_path=file,
         output_dir=output,
-        source_language=lang or None,
-        target_language=translate or None,
+        source_language=lang,
+        target_language=translate,
         profile=profile,
         translation_model=model,
         whisper_model=whisper_model,
         transcription_mode=mode,
         custom_instructions=custom,
-        enable_review=not no_review,
+        enable_review=False if no_review else None,
     )
 
 
@@ -91,12 +114,14 @@ def transcribe(
 @app.command()
 def batch(
     folder: Annotated[Path, typer.Argument(help="Folder of input files")],
-    lang: Annotated[str, typer.Option("--lang", "-l")] = "",
-    translate: Annotated[str, typer.Option("--translate", "-t")] = "",
-    profile: Annotated[str, typer.Option("--profile", "-p")] = "general",
-    model: Annotated[str, typer.Option("--model", "-m")] = "gpt-4.1",
-    output: Annotated[Path, typer.Option("--output", "-o")] = Path("./output"),
-    custom: Annotated[str, typer.Option("--custom")] = "",
+    lang: Annotated[str | None, typer.Option("--lang", "-l")] = None,
+    translate: Annotated[str | None, typer.Option("--translate", "-t")] = None,
+    profile: Annotated[str | None, typer.Option("--profile", "-p")] = None,
+    model: Annotated[str | None, typer.Option("--model", "-m")] = None,
+    whisper_model: Annotated[str | None, typer.Option("--whisper-model")] = None,
+    mode: Annotated[str | None, typer.Option("--mode")] = None,
+    output: Annotated[Path | None, typer.Option("--output", "-o")] = None,
+    custom: Annotated[str | None, typer.Option("--custom")] = None,
     no_review: Annotated[bool, typer.Option("--no-review")] = False,
 ) -> None:
     """Process all media files in a folder."""
@@ -125,25 +150,174 @@ def batch(
         run_pipeline_for_file(
             input_path=f,
             output_dir=output,
-            source_language=lang or None,
-            target_language=translate or None,
+            source_language=lang,
+            target_language=translate,
             profile=profile,
             translation_model=model,
+            whisper_model=whisper_model,
+            transcription_mode=mode,
             custom_instructions=custom,
-            enable_review=not no_review,
+            enable_review=False if no_review else None,
         )
 
     console.print(f"\n[bold green]All {len(files)} files processed.[/bold green]")
 
 
-# ── config ───────────────────────────────────────────────────────────────────
+# ── translate ────────────────────────────────────────────────────────────────
 
 
 @app.command()
-def config() -> None:
-    """View or edit configuration."""
-    console.print("[yellow]Config management — coming in Phase 2.[/yellow]")
-    console.print("For now, set OPENAI_API_KEY in your environment or .env file.")
+def translate(
+    srt: Annotated[Path, typer.Argument(help="Source .srt file to translate")],
+    to: Annotated[str, typer.Option("--to", "-t", help="Target language code (e.g., en)")],
+    profile: Annotated[str | None, typer.Option("--profile", "-p", help="Prompt profile")] = None,
+    model: Annotated[str | None, typer.Option("--model", "-m", help="Translation model")] = None,
+    output: Annotated[Path | None, typer.Option("--output", "-o", help="Output .srt path or output directory")] = None,
+    custom: Annotated[str | None, typer.Option("--custom", help="Custom translation instructions")] = None,
+    no_review: Annotated[bool, typer.Option("--no-review", help="Skip review pass")] = False,
+) -> None:
+    """Translate an existing subtitle file without re-transcribing media."""
+    from mediascribe.cli.output import run_translate_for_srt
+
+    if not srt.exists():
+        console.print(f"[red]Error:[/red] SRT file not found: {srt}")
+        raise typer.Exit(1)
+
+    run_translate_for_srt(
+        source_srt_path=srt,
+        target_language=to,
+        output_path=output,
+        profile=profile,
+        translation_model=model,
+        custom_instructions=custom,
+        enable_review=False if no_review else None,
+    )
+
+
+# ── config ───────────────────────────────────────────────────────────────────
+
+
+@config_app.command("set")
+def config_set(
+    key: Annotated[str, typer.Argument(help="Setting key (e.g. whisper_model)")],
+    value: Annotated[str, typer.Argument(help='Value (use "null" to unset)')],
+) -> None:
+    """Persist a config value to ~/.config/mediascribe/config.toml."""
+    from mediascribe.core.config import (
+        MediascribeSettings,
+        is_secret_setting,
+        is_valid_setting_key,
+        load_user_config,
+        parse_setting_value,
+        save_user_config,
+    )
+
+    k = _normalize_key(key)
+    if not is_valid_setting_key(k):
+        console.print(f"[red]Error:[/red] Unknown key: {key}")
+        raise typer.Exit(1)
+
+    try:
+        parsed = parse_setting_value(k, value)
+    except Exception as exc:
+        console.print(f"[red]Error:[/red] Invalid value for {k}: {exc}")
+        raise typer.Exit(1)
+
+    user_cfg = load_user_config()
+    if parsed is None:
+        user_cfg.pop(k, None)
+    else:
+        user_cfg[k] = parsed
+
+    try:
+        MediascribeSettings(**user_cfg)
+    except Exception as exc:
+        console.print(f"[red]Error:[/red] Config validation failed: {exc}")
+        raise typer.Exit(1)
+
+    path = save_user_config(user_cfg)
+    if parsed is None:
+        console.print(f"[green]Unset[/green] {k}")
+    elif is_secret_setting(k):
+        console.print(f"[green]Set[/green] {k} = [dim]<redacted>[/dim]")
+    else:
+        console.print(f"[green]Set[/green] {k} = {_render_value(parsed)}")
+    console.print(f"[dim]Saved: {path}[/dim]")
+
+
+@config_app.command("get")
+def config_get(
+    key: Annotated[str, typer.Argument(help="Setting key")],
+    raw: Annotated[bool, typer.Option("--raw", help="Show raw secret values")] = False,
+) -> None:
+    """Read one effective config value (merged from env/.env/config/defaults)."""
+    from mediascribe.core.config import (
+        is_secret_setting,
+        is_valid_setting_key,
+        load_settings,
+        load_user_config,
+    )
+
+    k = _normalize_key(key)
+    if not is_valid_setting_key(k):
+        console.print(f"[red]Error:[/red] Unknown key: {key}")
+        raise typer.Exit(1)
+
+    settings = load_settings()
+    value = getattr(settings, k)
+
+    if is_secret_setting(k) and not raw and value is not None:
+        display = "<redacted>"
+    else:
+        display = _render_value(value)
+
+    source = "config.toml" if k in load_user_config() else "env/.env/default"
+    console.print(f"{k} = {display}")
+    console.print(f"[dim]source: {source}[/dim]")
+
+
+@config_app.command("list")
+def config_list(
+    all_values: Annotated[bool, typer.Option("--all", help="Show all effective settings")] = False,
+    raw_secrets: Annotated[bool, typer.Option("--raw-secrets", help="Show secret values")] = False,
+) -> None:
+    """List persisted config keys, or all effective keys with --all."""
+    from mediascribe.core.config import (
+        is_secret_setting,
+        list_setting_keys,
+        load_settings,
+        load_user_config,
+    )
+
+    user_cfg = load_user_config()
+    settings = load_settings()
+
+    if all_values:
+        keys = list_setting_keys()
+        if not keys:
+            console.print("[yellow]No settings found.[/yellow]")
+            return
+        for key in keys:
+            value = getattr(settings, key)
+            if is_secret_setting(key) and not raw_secrets and value is not None:
+                display = "<redacted>"
+            else:
+                display = _render_value(value)
+            console.print(f"{key} = {display}")
+        return
+
+    if not user_cfg:
+        console.print("[yellow]No persisted config values yet.[/yellow]")
+        console.print("Use [bold]mediascribe config set <key> <value>[/bold] to store one.")
+        return
+
+    for key in sorted(user_cfg.keys()):
+        value = user_cfg[key]
+        if is_secret_setting(key) and not raw_secrets and value is not None:
+            display = "<redacted>"
+        else:
+            display = _render_value(value)
+        console.print(f"{key} = {display}")
 
 
 # ── tui ──────────────────────────────────────────────────────────────────────

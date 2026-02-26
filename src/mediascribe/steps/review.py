@@ -127,8 +127,14 @@ class ReviewStep(PipelineStep):
         final_path = job.output_dir / f"{job.stem}_{target}.srt"
 
         if not source_srt_path.exists():
-            candidates = [p for p in job.output_dir.glob(f"{job.stem}_*.srt")
-                          if "_en" not in p.stem and "_draft" not in p.stem]
+            candidates: list[Path] = []
+            for p in job.output_dir.glob(f"{job.stem}_*.srt"):
+                stem = p.stem
+                if stem.endswith("_draft"):
+                    continue
+                if stem.endswith(f"_{target}"):
+                    continue
+                candidates.append(p)
             if candidates:
                 source_srt_path = candidates[0]
             else:
@@ -138,12 +144,16 @@ class ReviewStep(PipelineStep):
             raise FileNotFoundError(f"No draft SRT found: {draft_path}")
 
         # Get review prompt
-        template = TEMPLATES.get("general", TEMPLATES["general"])
+        profile = settings.translation_profile
+        template = TEMPLATES.get(profile, TEMPLATES["general"])
         _, review_prompt = render_prompt(
             template, target, settings.custom_instructions,
         )
 
-        events.log(f"Model: {settings.translation_model}", step=self.name)
+        events.log(
+            f"Model: {settings.translation_model} | Profile: {template.name}",
+            step=self.name,
+        )
 
         source_srt = read_srt(source_srt_path)
         draft_srt = read_srt(draft_path)
@@ -187,11 +197,5 @@ class ReviewStep(PipelineStep):
         })
 
     def can_skip(self, job: Job) -> bool:
-        """Skip if final (non-draft) translation SRT exists."""
-        if not hasattr(job, '_settings_cache'):
-            return False
-        # Look for final SRT (not draft)
-        for p in job.output_dir.glob(f"{job.stem}_*.srt"):
-            if "_draft" not in p.stem and p.stem != f"{job.stem}_{job.media_info.language or 'unknown'}":
-                return True
+        """Review skip decision depends on target language, so do not skip here."""
         return False

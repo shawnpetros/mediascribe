@@ -35,6 +35,7 @@ class TestSettings:
         assert settings.chunk_overlap_sec == 15
         assert settings.word_timestamps is True
         assert settings.translation_model == "gpt-4.1"
+        assert settings.translation_profile == "general"
         assert settings.translation_batch_size == 15
         assert settings.enable_review_pass is True
         assert settings.source_language is None

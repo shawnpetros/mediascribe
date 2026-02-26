@@ -58,7 +58,7 @@ dev = [
 ]
 
 [project.scripts]
-mediascribe = "mediascribe.cli.app:main"
+mediascribe = "mediascribe.cli.app:app"
 
 [project.urls]
 Repository = "https://github.com/shawnpetros/mediascribe"

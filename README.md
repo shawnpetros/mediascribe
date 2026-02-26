@@ -8,3 +8,4 @@ mediascribe transcribe video.mp4 --lang ja --translate en
 ```
 
 See [docs/SPEC.md](docs/SPEC.md) for full specification.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for local development setup.

@@ -7,9 +7,9 @@
 
 ## Current Status
 
-**Phase:** 1 — Core Library + CLI (MVP) — **CORE COMPLETE + TESTED**
-**Last Session:** 2026-02-15
-**Last Agent/Session Notes:** All open questions resolved. Overlap-based chunking implemented. Comprehensive test suite added for core logic modules.
+**Phase:** 1 — Core Library + CLI (MVP) — **COMPLETE + AUDITED**
+**Last Session:** 2026-02-26
+**Last Agent/Session Notes:** Feature audit completed. Implemented standalone `translate` command, real `config set/get/list`, profile-aware translation/review prompts, fixed CLI entrypoint wiring, and added GitHub Actions CI workflow.
 
 ---
 
@@ -87,6 +87,23 @@
 12. test: comprehensive test suite for core logic modules
 13. docs: resolve open questions, update SPEC.md + PROJECT.md
 
+### Session 4 — 2026-02-26
+**Focus:** Feature audit + close remaining Phase 1 CLI/Foundation gaps
+**Completed:**
+- Audited documented feature sets against implementation status
+- Implemented persistent config management:
+  - `mediascribe config set`
+  - `mediascribe config get`
+  - `mediascribe config list`
+  - TOML-backed persisted config at XDG config path
+- Implemented standalone subtitle translation command:
+  - `mediascribe translate <srt> --to <lang>`
+- Wired translation profile selection into translate/review steps
+- Fixed CLI entrypoints (`python -m mediascribe` and console script)
+- Added GitHub Actions CI workflow (`ruff` + `pytest`)
+- Added development environment setup guide (`docs/DEVELOPMENT.md`)
+- Added tests for config persistence and CLI config/translate command wiring
+
 ---
 
 ## Phase 1 — Core Library + CLI (MVP)
@@ -99,8 +116,8 @@
 - [x] .gitignore
 - [x] Git repo initialized
 - [x] Basic test structure
-- [ ] CI config (GitHub Actions)
-- [ ] Dev environment setup docs
+- [x] CI config (GitHub Actions)
+- [x] Dev environment setup docs
 
 ### 1.2 Core Abstractions
 - [x] core/config.py — Pydantic settings with .env + XDG support
@@ -139,8 +156,8 @@
 - [x] cli/app.py — Typer app with transcribe, batch, config, tui commands
 - [x] cli/output.py — Rich event handler + pipeline runner
 - [x] End-to-end pipeline wiring (detect -> normalize -> transcribe -> translate -> review)
-- [ ] mediascribe translate <srt> — standalone translate command
-- [ ] mediascribe config set/get/list — config management
+- [x] mediascribe translate <srt> — standalone translate command
+- [x] mediascribe config set/get/list — config management
 
 ---
 
