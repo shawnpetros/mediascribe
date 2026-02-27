@@ -172,7 +172,7 @@ jobs:
 
   # ── Update Homebrew tap formula ─────────────────────────
   update-homebrew:
-    needs: [auto-tag, publish-pypi]
+    needs: [auto-tag, build, publish-pypi]
     if: needs.auto-tag.outputs.created == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -183,25 +183,49 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Get version and compute SHA256
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Compute SHA256 from build artifact and resolve PyPI URL
         id: meta
         run: |
           VERSION="${{ needs.auto-tag.outputs.version }}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          # Wait for PyPI to propagate, then look up the sdist URL via API
-          sleep 30
-          SDIST_URL=$(curl -sSf "https://pypi.org/pypi/mediascribe/${VERSION}/json" \
-            | python -c "import sys,json; urls=json.load(sys.stdin)['urls']; print(next(u['url'] for u in urls if u['packagetype']=='sdist'))")
+          # Hash the sdist we built — this is the exact file uploaded to PyPI
+          LOCAL_SHA256=$(sha256sum dist/mediascribe-${VERSION}.tar.gz | awk '{print $1}')
+          echo "sha256=$LOCAL_SHA256" >> "$GITHUB_OUTPUT"
+
+          # Wait for PyPI to propagate, then look up the canonical URL
+          for attempt in 1 2 3 4 5; do
+            sleep 30
+            if SDIST_URL=$(curl -sSf "https://pypi.org/pypi/mediascribe/${VERSION}/json" \
+              | python -c "import sys,json; urls=json.load(sys.stdin)['urls']; print(next(u['url'] for u in urls if u['packagetype']=='sdist'))"); then
+              break
+            fi
+            echo "Attempt $attempt: PyPI API not ready, retrying..."
+          done
+
+          if [ -z "$SDIST_URL" ]; then
+            echo "::error::Failed to resolve PyPI URL after 5 attempts"
+            exit 1
+          fi
           echo "url=$SDIST_URL" >> "$GITHUB_OUTPUT"
 
+          # Verify PyPI serves the same file we built
           curl -sSfL "$SDIST_URL" -o /tmp/sdist.tar.gz
-          SHA256=$(sha256sum /tmp/sdist.tar.gz | awk '{print $1}')
-          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+          REMOTE_SHA256=$(sha256sum /tmp/sdist.tar.gz | awk '{print $1}')
+          if [ "$LOCAL_SHA256" != "$REMOTE_SHA256" ]; then
+            echo "::error::SHA256 mismatch! Local artifact: $LOCAL_SHA256, PyPI download: $REMOTE_SHA256"
+            exit 1
+          fi
 
           echo "Version: $VERSION"
           echo "URL: $SDIST_URL"
-          echo "SHA256: $SHA256"
+          echo "SHA256: $LOCAL_SHA256 (verified against PyPI)"
 
       - name: Update formula in tap repo
         env:
