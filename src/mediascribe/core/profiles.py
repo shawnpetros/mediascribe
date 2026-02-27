@@ -11,6 +11,7 @@ custom_instructions for the translation prompt.
 from __future__ import annotations
 
 import tomllib
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -110,6 +111,31 @@ def _parse_toml_profile(name: str, data: dict[str, Any]) -> Profile:
     ):
         if key in data:
             overrides[key] = data[key]
+
+    # Known top-level keys
+    known_top_keys = {"description", "transcription", "translation", "output",
+                      "source_language", "target_language", "custom_instructions",
+                      "max_concurrency", "profile"}
+
+    for key in data:
+        if key not in known_top_keys:
+            warnings.warn(
+                f"Unknown key '{key}' in profile '{name}' — will be ignored",
+                UserWarning,
+                stacklevel=3,
+            )
+
+    # Check for unknown keys within known sections
+    for section, key_map in section_key_map.items():
+        if section in data and isinstance(data[section], dict):
+            for key in data[section]:
+                if key not in key_map:
+                    warnings.warn(
+                        f"Unknown key '{key}' in profile '{name}'"
+                        f" section '[{section}]' — will be ignored",
+                        UserWarning,
+                        stacklevel=3,
+                    )
 
     return Profile(name=name, description=description, overrides=overrides)
 

@@ -86,9 +86,7 @@ def _text_similar(a: str, b: str, threshold: float = 0.7) -> bool:
         return False
 
     # Character-level overlap (order-independent)
-    from collections import Counter as _Counter
-
-    ca, cb = _Counter(a), _Counter(b)
+    ca, cb = Counter(a), Counter(b)
     overlap = sum((ca & cb).values())
     total = max(sum(ca.values()), sum(cb.values()))
     return (overlap / total) >= threshold if total else True
@@ -387,9 +385,9 @@ class TranscribeStep(PipelineStep):
         """Skip if SRT already exists."""
         from mediascribe.formats.srt import srt_to_segments
 
-        # Look for any *_*.srt file matching the stem
+        # Look for any source-language SRT (exclude drafts and final translations)
         for p in job.output_dir.glob(f"{job.stem}_*.srt"):
-            if "_en" not in p.stem:  # Skip translation SRTs
+            if "_draft" not in p.stem and p.stem.count("_") == 1:
                 job.segments = srt_to_segments(p)
                 return True
         return False

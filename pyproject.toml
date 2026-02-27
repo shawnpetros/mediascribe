@@ -57,6 +57,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.5",
     "mypy>=1.10",
+    "types-psutil>=5.9",
     "build>=1.0",
     "twine>=5.0",
 ]
@@ -85,6 +86,28 @@ select = ["E", "F", "I", "N", "UP", "B", "SIM"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pysrt",
+    "pysrt.*",
+    "faster_whisper",
+    "faster_whisper.*",
+    "textual",
+    "textual.*",
+    "textual_fspicker",
+    "textual_fspicker.*",
+    "pyannote.*",
+    "torch",
+]
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = [
+    "mediascribe.tui.*",
+]
+disallow_subclassing_any = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

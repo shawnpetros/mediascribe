@@ -130,6 +130,7 @@ class TranslateStep(PipelineStep):
             return StepResult(data={"skipped": True})
 
         # Find source SRT
+        target = settings.target_language
         source_lang = settings.source_language or "unknown"
         source_srt_path = job.output_dir / f"{job.stem}_{source_lang}.srt"
         if not source_srt_path.exists():
@@ -137,14 +138,13 @@ class TranslateStep(PipelineStep):
             candidates = [
                 p
                 for p in job.output_dir.glob(f"{job.stem}_*.srt")
-                if "_en" not in p.stem and "_draft" not in p.stem
+                if f"_{target}" not in p.stem and "_draft" not in p.stem
             ]
             if candidates:
                 source_srt_path = candidates[0]
             else:
                 raise FileNotFoundError(f"No source SRT found for {job.stem}")
 
-        target = settings.target_language
         draft_path = job.output_dir / f"{job.stem}_{target}_draft.srt"
 
         template = TEMPLATES.get(settings.profile, TEMPLATES["general"])
