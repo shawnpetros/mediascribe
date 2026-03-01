@@ -7,6 +7,7 @@ background thread so these blocking calls don't freeze the UI.
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -116,7 +117,14 @@ def split_audio(
                 "16000",
                 str(chunk_path),
             ]
-            subprocess.run(cmd, capture_output=True)
+            r = subprocess.run(cmd, capture_output=True)
+            if r.returncode != 0:
+                logging.getLogger(__name__).warning(
+                    "ffmpeg split_audio chunk %s failed (rc=%d): %s",
+                    chunk_path,
+                    r.returncode,
+                    r.stderr.decode(errors="replace")[:200],
+                )
 
         if chunk_path.exists() and chunk_path.stat().st_size > 0:
             chunks.append(chunk_path)

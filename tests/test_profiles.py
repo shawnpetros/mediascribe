@@ -160,3 +160,48 @@ class TestProfileApply:
         )
         result = p.apply({"transcription_mode": None})
         assert result["transcription_mode"] == "local"
+
+
+class TestProfileValidation:
+    def test_unknown_top_level_key_warns(self, tmp_path: Path):
+        profile_dir = tmp_path / "profiles"
+        profile_dir.mkdir()
+        toml_content = b'description = "test"\nunknown_key = "value"\n'
+        (profile_dir / "test.toml").write_bytes(toml_content)
+
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            load_profile("test", config_dir=tmp_path)
+            assert len(w) == 1
+            assert "unknown_key" in str(w[0].message).lower() or "Unknown key" in str(w[0].message)
+
+    def test_unknown_section_key_warns(self, tmp_path: Path):
+        profile_dir = tmp_path / "profiles"
+        profile_dir.mkdir()
+        toml_content = b'description = "test"\n\n[transcription]\nmode = "local"\nbogus = "value"\n'
+        (profile_dir / "test.toml").write_bytes(toml_content)
+
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            load_profile("test", config_dir=tmp_path)
+            assert any(
+                "bogus" in str(warning.message).lower() or "bogus" in str(warning.message)
+                for warning in w
+            )
+
+    def test_valid_profile_no_warnings(self, tmp_path: Path):
+        profile_dir = tmp_path / "profiles"
+        profile_dir.mkdir()
+        toml_content = b'description = "test"\n\n[transcription]\nmode = "local"\n'
+        (profile_dir / "test.toml").write_bytes(toml_content)
+
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            load_profile("test", config_dir=tmp_path)
+            assert len(w) == 0

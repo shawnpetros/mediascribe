@@ -11,6 +11,7 @@ Results are stored in ``job.analysis`` for downstream export (JSON, etc.).
 from __future__ import annotations
 
 import json
+import re
 import textwrap
 
 from mediascribe.core.config import MediascribeSettings
@@ -108,12 +109,10 @@ class AnalyzeStep(PipelineStep):
 
             raw = resp.output_text.strip()
             # Strip markdown fences if present
-            import re
-
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
             analysis = json.loads(raw)
-        except (json.JSONDecodeError, Exception) as exc:
+        except Exception as exc:
             events.warn(f"Analysis parse error: {exc}", step=self.name)
             analysis = {
                 "summary": "Analysis failed — could not parse AI response.",

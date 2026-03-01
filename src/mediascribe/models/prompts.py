@@ -44,7 +44,7 @@ TEMPLATE_GENERAL = PromptTemplate(
     """),
     system_review=textwrap.dedent("""\
         You review translated subtitles for accuracy and naturalness.
-        You receive {{id, source, translation}} — original + draft translation.
+        You receive {{id, source, draft}} — original + draft translation.
 
         Check each line and fix:
         1. Mistranslations or meaning shifts
@@ -55,7 +55,7 @@ TEMPLATE_GENERAL = PromptTemplate(
 
         If a line is already good, keep it exactly as-is.
 
-        Input: JSON [{{id, source, translation}}].
+        Input: JSON [{{id, source, draft}}].
         Output: JSON [{{id, text}}] with corrected translations.
         Return ONLY the JSON array with ALL ids.
     """),
@@ -82,8 +82,8 @@ TEMPLATE_ANIME = PromptTemplate(
         Return ONLY the JSON array, no markdown, no explanation.
     """),
     system_review=textwrap.dedent("""\
-        You review English subtitles for anime.
-        You receive {{id, ja, en}} — original Japanese + draft English.
+        You review translated subtitles for anime.
+        You receive {{id, source, draft}} — original source + draft translation.
 
         Check each line and fix:
         1. Character names should be consistent
@@ -95,7 +95,7 @@ TEMPLATE_ANIME = PromptTemplate(
 
         If a line is already good, keep it exactly as-is.
 
-        Input: JSON [{{id, ja, en}}].
+        Input: JSON [{{id, source, draft}}].
         Output: JSON [{{id, text}}] with corrected {target_language}.
         Return ONLY the JSON array with ALL ids.
     """),
@@ -121,7 +121,7 @@ TEMPLATE_PODCAST = PromptTemplate(
     """),
     system_review=textwrap.dedent("""\
         You review translated podcast transcripts.
-        You receive {{id, source, translation}} — original + draft.
+        You receive {{id, source, draft}} — original + draft.
 
         Check each line and fix:
         1. Conversational tone preserved
@@ -130,7 +130,7 @@ TEMPLATE_PODCAST = PromptTemplate(
         4. No unnecessary formalization
         {custom_instructions}
 
-        Input: JSON [{{id, source, translation}}].
+        Input: JSON [{{id, source, draft}}].
         Output: JSON [{{id, text}}] with corrected {target_language}.
         Return ONLY the JSON array with ALL ids.
     """),
@@ -156,7 +156,7 @@ TEMPLATE_MEETING = PromptTemplate(
     """),
     system_review=textwrap.dedent("""\
         You review translated meeting transcripts.
-        You receive {{id, source, translation}} — original + draft.
+        You receive {{id, source, draft}} — original + draft.
 
         Check each line and fix:
         1. Technical terms accurately translated
@@ -165,7 +165,7 @@ TEMPLATE_MEETING = PromptTemplate(
         4. No meaning loss
         {custom_instructions}
 
-        Input: JSON [{{id, source, translation}}].
+        Input: JSON [{{id, source, draft}}].
         Output: JSON [{{id, text}}] with corrected {target_language}.
         Return ONLY the JSON array with ALL ids.
     """),

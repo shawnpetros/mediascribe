@@ -56,8 +56,8 @@ def review_translations(
     pairs = [
         {
             "id": i + 1,
-            "ja": source_srt[i].text.strip(),
-            "en": draft_srt[i].text.strip(),
+            "source": source_srt[i].text.strip(),
+            "draft": draft_srt[i].text.strip(),
         }
         for i in range(min(len(source_srt), len(draft_srt)))
     ]
@@ -87,7 +87,7 @@ def review_translations(
             if events:
                 events.warn("Parse error in review batch — keeping drafts", step="review")
             for item in batch:
-                reviewed[item["id"]] = item["en"]
+                reviewed[item["id"]] = item["draft"]
 
     return reviewed
 
@@ -133,7 +133,7 @@ class ReviewStep(PipelineStep):
             candidates = [
                 p
                 for p in job.output_dir.glob(f"{job.stem}_*.srt")
-                if "_en" not in p.stem and "_draft" not in p.stem
+                if f"_{target}" not in p.stem and "_draft" not in p.stem
             ]
             if candidates:
                 source_srt_path = candidates[0]
