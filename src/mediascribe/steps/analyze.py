@@ -71,7 +71,11 @@ class AnalyzeStep(PipelineStep):
         if settings.openai_api_key:
             api_key = settings.openai_api_key.get_secret_value()
 
-        client = get_client(api_key)
+        try:
+            client = get_client(api_key)
+        except Exception as exc:
+            events.warn(f"Cannot initialize API client: {exc}", step=self.name)
+            return StepResult(data={"skipped": True, "reason": "no API key"})
 
         # Build transcript text for analysis
         lines = []
