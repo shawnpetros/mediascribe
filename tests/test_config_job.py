@@ -26,8 +26,15 @@ from mediascribe.core.job import (
 
 
 class TestSettings:
-    def test_defaults(self):
-        settings = MediascribeSettings()
+    def _isolated_settings(self, tmp_path: Path, **kwargs):
+        """Create settings isolated from user config files."""
+        empty_config = tmp_path / "config"
+        empty_config.mkdir(exist_ok=True)
+        with patch("mediascribe.core.config._default_config_dir", return_value=empty_config):
+            return MediascribeSettings(config_dir=empty_config, **kwargs)
+
+    def test_defaults(self, tmp_path: Path):
+        settings = self._isolated_settings(tmp_path)
         assert settings.transcription_mode == "auto"
         assert settings.whisper_model == "large-v3"
         assert settings.chunk_duration_sec == 180
@@ -44,14 +51,14 @@ class TestSettings:
         assert settings.min_gap_sec == 0.15
         assert settings.chars_per_second == 5.0
 
-    def test_api_key_is_secret(self):
-        settings = MediascribeSettings(openai_api_key="sk-test-123")
+    def test_api_key_is_secret(self, tmp_path: Path):
+        settings = self._isolated_settings(tmp_path, openai_api_key="sk-test-123")
         # SecretStr should not leak the key in repr
         assert "sk-test-123" not in repr(settings)
         assert settings.openai_api_key.get_secret_value() == "sk-test-123"
 
-    def test_api_key_none_by_default(self):
-        settings = MediascribeSettings()
+    def test_api_key_none_by_default(self, tmp_path: Path):
+        settings = self._isolated_settings(tmp_path)
         assert settings.openai_api_key is None
 
     def test_env_var_override(self):
@@ -62,6 +69,31 @@ class TestSettings:
     def test_chunk_overlap_setting(self):
         settings = MediascribeSettings(chunk_overlap_sec=30)
         assert settings.chunk_overlap_sec == 30
+
+    def test_toml_config_loading(self, tmp_path: Path):
+        """Verify settings are loaded from config.toml."""
+        config_dir = tmp_path / "config"
+        config_dir.mkdir()
+        (config_dir / "config.toml").write_text(
+            'whisper_model = "small"\n'
+            'translation_model = "gpt-4o"\n'
+        )
+        with patch("mediascribe.core.config._default_config_dir", return_value=config_dir):
+            settings = MediascribeSettings(config_dir=config_dir)
+        assert settings.whisper_model == "small"
+        assert settings.translation_model == "gpt-4o"
+
+    def test_env_overrides_toml(self, tmp_path: Path):
+        """Verify env vars take priority over config.toml."""
+        config_dir = tmp_path / "config"
+        config_dir.mkdir()
+        (config_dir / "config.toml").write_text('whisper_model = "small"\n')
+        with (
+            patch("mediascribe.core.config._default_config_dir", return_value=config_dir),
+            patch.dict(os.environ, {"MEDIASCRIBE_WHISPER_MODEL": "tiny"}),
+        ):
+            settings = MediascribeSettings(config_dir=config_dir)
+        assert settings.whisper_model == "tiny"
 
     def test_ensure_dirs(self, tmp_path: Path):
         settings = MediascribeSettings(

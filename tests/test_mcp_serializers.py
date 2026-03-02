@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 from mediascribe.core.config import MediascribeSettings
 from mediascribe.core.job import Job, JobStatus, MediaInfo, MediaType, Segment
@@ -122,8 +123,11 @@ class TestJobToResult:
 
 
 class TestSettingsToResult:
-    def test_basic_defaults(self) -> None:
-        settings = MediascribeSettings()
+    def test_basic_defaults(self, tmp_path: Path) -> None:
+        empty_config = tmp_path / "config"
+        empty_config.mkdir()
+        with patch("mediascribe.core.config._default_config_dir", return_value=empty_config):
+            settings = MediascribeSettings(config_dir=empty_config)
         result = settings_to_result(settings)
 
         assert result["profile"] == "general"
