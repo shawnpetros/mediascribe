@@ -45,6 +45,15 @@ class FailingStep(PipelineStep):
         raise RuntimeError("Something went wrong")
 
 
+class OptionalFailingStep(PipelineStep):
+    name = "optional_fail"
+    description = "Optional step that fails"
+    required = False
+
+    def execute(self, job, settings, events):
+        raise RuntimeError("Optional step error")
+
+
 class StateWritingStep(PipelineStep):
     """Step that writes to job.analysis to test data flow."""
 
@@ -196,6 +205,35 @@ class TestErrorHandling:
         job_error_events = [e for e in log if e.type == EventType.JOB_ERROR]
         assert len(error_events) == 1
         assert len(job_error_events) == 1
+
+    def test_optional_step_failure_continues_pipeline(self, tmp_path: Path):
+        pipeline, events, log = _make_pipeline(tmp_path)
+        before = RecordingStep("before")
+        optional = OptionalFailingStep()
+        after = RecordingStep("after")
+
+        pipeline.add_step(before)
+        pipeline.add_step(optional)
+        pipeline.add_step(after)
+
+        job = _make_job(tmp_path)
+        result = pipeline.run(job)
+
+        assert before.executed is True
+        assert after.executed is True
+        assert result.status == JobStatus.COMPLETED
+
+    def test_optional_step_failure_emits_error_not_job_error(self, tmp_path: Path):
+        pipeline, events, log = _make_pipeline(tmp_path)
+        pipeline.add_step(OptionalFailingStep())
+
+        job = _make_job(tmp_path)
+        pipeline.run(job)
+
+        error_events = [e for e in log if e.type == EventType.STEP_ERROR]
+        job_error_events = [e for e in log if e.type == EventType.JOB_ERROR]
+        assert len(error_events) == 1
+        assert len(job_error_events) == 0
 
 
 class TestEventEmission:

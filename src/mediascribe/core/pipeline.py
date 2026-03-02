@@ -77,8 +77,6 @@ class Pipeline:
                     )
                 )
             except Exception as exc:
-                job.status = JobStatus.FAILED
-                job.error = str(exc)
                 self.events.emit(
                     PipelineEvent(
                         type=EventType.STEP_ERROR,
@@ -86,13 +84,17 @@ class Pipeline:
                         message=f"Error in {step.name}: {exc}",
                     )
                 )
-                self.events.emit(
-                    PipelineEvent(
-                        type=EventType.JOB_ERROR,
-                        message=f"Job failed: {exc}",
+
+                if step.required:
+                    job.status = JobStatus.FAILED
+                    job.error = str(exc)
+                    self.events.emit(
+                        PipelineEvent(
+                            type=EventType.JOB_ERROR,
+                            message=f"Job failed: {exc}",
+                        )
                     )
-                )
-                return job
+                    return job
 
         job.status = JobStatus.COMPLETED
         job.current_step = None
