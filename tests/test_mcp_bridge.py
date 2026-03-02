@@ -174,9 +174,7 @@ class TestRunTranscription:
         assert "AnalyzeStep" in step_types
 
     @patch("mediascribe.mcp.bridge.Pipeline")
-    def test_core_steps_always_present(
-        self, mock_pipeline_cls: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_core_steps_always_present(self, mock_pipeline_cls: MagicMock, tmp_path: Path) -> None:
         input_file = tmp_path / "test.mp4"
         input_file.touch()
 

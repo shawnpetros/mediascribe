@@ -75,8 +75,7 @@ class TestSettings:
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         (config_dir / "config.toml").write_text(
-            'whisper_model = "small"\n'
-            'translation_model = "gpt-4o"\n'
+            'whisper_model = "small"\ntranslation_model = "gpt-4o"\n'
         )
         with patch("mediascribe.core.config._default_config_dir", return_value=config_dir):
             settings = MediascribeSettings(config_dir=config_dir)

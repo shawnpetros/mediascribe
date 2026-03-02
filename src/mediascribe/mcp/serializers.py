@@ -76,16 +76,20 @@ def profiles_to_result(config_dir: Path | None = None) -> dict[str, Any]:
     for name in names:
         try:
             p = load_profile(name, config_dir)
-            profiles.append({
-                "name": p.name,
-                "description": p.description,
-                "overrides": p.overrides,
-            })
+            profiles.append(
+                {
+                    "name": p.name,
+                    "description": p.description,
+                    "overrides": p.overrides,
+                }
+            )
         except FileNotFoundError:
-            profiles.append({
-                "name": name,
-                "description": "(load error)",
-                "overrides": {},
-            })
+            profiles.append(
+                {
+                    "name": name,
+                    "description": "(load error)",
+                    "overrides": {},
+                }
+            )
 
     return {"profiles": profiles}

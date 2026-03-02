@@ -27,9 +27,7 @@ mcp = FastMCP(
 _executor = ThreadPoolExecutor(max_workers=2)
 
 
-def _make_progress_forwarder(
-    ctx: Context, loop: asyncio.AbstractEventLoop
-) -> EventHandler:
+def _make_progress_forwarder(ctx: Context, loop: asyncio.AbstractEventLoop) -> EventHandler:
     """Create a sync callback that forwards pipeline events to MCP Context.
 
     Pipeline steps run in a worker thread; this bridges events back to the
