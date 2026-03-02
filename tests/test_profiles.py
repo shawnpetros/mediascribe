@@ -175,16 +175,12 @@ class TestProfileValidation:
             warnings.simplefilter("always")
             load_profile("test", config_dir=tmp_path)
             assert len(w) == 1
-            assert "unknown_key" in str(w[0].message).lower() or "Unknown key" in str(
-                w[0].message
-            )
+            assert "unknown_key" in str(w[0].message).lower() or "Unknown key" in str(w[0].message)
 
     def test_unknown_section_key_warns(self, tmp_path: Path):
         profile_dir = tmp_path / "profiles"
         profile_dir.mkdir()
-        toml_content = (
-            b'description = "test"\n\n[transcription]\nmode = "local"\nbogus = "value"\n'
-        )
+        toml_content = b'description = "test"\n\n[transcription]\nmode = "local"\nbogus = "value"\n'
         (profile_dir / "test.toml").write_bytes(toml_content)
 
         import warnings
@@ -193,8 +189,7 @@ class TestProfileValidation:
             warnings.simplefilter("always")
             load_profile("test", config_dir=tmp_path)
             assert any(
-                "bogus" in str(warning.message).lower()
-                or "bogus" in str(warning.message)
+                "bogus" in str(warning.message).lower() or "bogus" in str(warning.message)
                 for warning in w
             )
 

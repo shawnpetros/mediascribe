@@ -113,9 +113,17 @@ def _parse_toml_profile(name: str, data: dict[str, Any]) -> Profile:
             overrides[key] = data[key]
 
     # Known top-level keys
-    known_top_keys = {"description", "transcription", "translation", "output",
-                      "source_language", "target_language", "custom_instructions",
-                      "max_concurrency", "profile"}
+    known_top_keys = {
+        "description",
+        "transcription",
+        "translation",
+        "output",
+        "source_language",
+        "target_language",
+        "custom_instructions",
+        "max_concurrency",
+        "profile",
+    }
 
     for key in data:
         if key not in known_top_keys:

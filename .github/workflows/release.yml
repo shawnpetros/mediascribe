@@ -1,10 +1,10 @@
-name: Release
+name: Release & Publish
 
-# Automatically tags and releases when the version in pyproject.toml
-# changes on main. Directly triggers the publish workflow since tags
-# pushed by GITHUB_TOKEN don't trigger other workflows.
+# Automatically tags and publishes when the version in pyproject.toml
+# changes on main. Everything runs in a single workflow to avoid the
+# GITHUB_TOKEN limitation where tag pushes don't trigger other workflows.
 #
-# Flow: merge to main -> create tag -> trigger publish workflow
+# Flow: merge to main -> create tag -> test -> build -> publish
 
 on:
   push:
@@ -14,13 +14,15 @@ on:
 
 permissions:
   contents: write
-  actions: write
+  id-token: write
 
 jobs:
+  # ── Detect version bump and create tag ───────────────
   auto-tag:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
       created: ${{ steps.check.outputs.created }}
     steps:
       - uses: actions/checkout@v4
@@ -62,17 +64,222 @@ jobs:
           git push origin "$TAG"
           echo "Created and pushed tag: $TAG"
 
-  trigger-publish:
+  # ── Gate: run full CI before publishing ───────────────
+  test:
     needs: auto-tag
+    if: needs.auto-tag.outputs.created == 'true'
+    uses: ./.github/workflows/ci.yml
+
+  # ── Build distribution artifacts ──────────────────────
+  build:
+    needs: [auto-tag, test]
     if: needs.auto-tag.outputs.created == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger publish workflow
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # ── Smoke test the built wheel ─────────────────────────
+  smoke:
+    needs: [auto-tag, build]
+    if: needs.auto-tag.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Install from wheel
+        run: |
+          pip install dist/*.whl
+          pip install pytest
+
+      - name: Verify CLI loads
+        run: |
+          mediascribe --version
+          mediascribe --help
+          mediascribe config show
+
+      - name: Run integration tests
+        run: pytest tests/test_cli_integration.py -v --tb=short
+
+  # ── Publish to PyPI via trusted publisher (OIDC) ──────
+  publish-pypi:
+    needs: [auto-tag, build, smoke]
+    if: needs.auto-tag.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mediascribe
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  # ── Create GitHub Release ─────────────────────────────
+  github-release:
+    needs: [auto-tag, build, smoke]
+    if: needs.auto-tag.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run publish.yml \
-            --repo "${{ github.repository }}" \
-            --ref "${{ needs.auto-tag.outputs.tag }}" \
-            -f tag="${{ needs.auto-tag.outputs.tag }}"
-          echo "Triggered publish for ${{ needs.auto-tag.outputs.tag }}"
+          gh release create "${{ needs.auto-tag.outputs.tag }}" dist/* \
+            --title "mediascribe ${{ needs.auto-tag.outputs.tag }}" \
+            --generate-notes
+
+  # ── Update Homebrew tap formula ─────────────────────────
+  update-homebrew:
+    needs: [auto-tag, build, publish-pypi]
+    if: needs.auto-tag.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Compute SHA256 from build artifact and resolve PyPI URL
+        id: meta
+        run: |
+          VERSION="${{ needs.auto-tag.outputs.version }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          # Hash the sdist we built — this is the exact file uploaded to PyPI
+          LOCAL_SHA256=$(sha256sum dist/mediascribe-${VERSION}.tar.gz | awk '{print $1}')
+          echo "sha256=$LOCAL_SHA256" >> "$GITHUB_OUTPUT"
+
+          # Wait for PyPI to propagate, then look up the canonical URL
+          for attempt in 1 2 3 4 5; do
+            sleep 30
+            if SDIST_URL=$(curl -sSf "https://pypi.org/pypi/mediascribe/${VERSION}/json" \
+              | python -c "import sys,json; urls=json.load(sys.stdin)['urls']; print(next(u['url'] for u in urls if u['packagetype']=='sdist'))"); then
+              break
+            fi
+            echo "Attempt $attempt: PyPI API not ready, retrying..."
+          done
+
+          if [ -z "$SDIST_URL" ]; then
+            echo "::error::Failed to resolve PyPI URL after 5 attempts"
+            exit 1
+          fi
+          echo "url=$SDIST_URL" >> "$GITHUB_OUTPUT"
+
+          # Verify PyPI serves the same file we built
+          curl -sSfL "$SDIST_URL" -o /tmp/sdist.tar.gz
+          REMOTE_SHA256=$(sha256sum /tmp/sdist.tar.gz | awk '{print $1}')
+          if [ "$LOCAL_SHA256" != "$REMOTE_SHA256" ]; then
+            echo "::error::SHA256 mismatch! Local artifact: $LOCAL_SHA256, PyPI download: $REMOTE_SHA256"
+            exit 1
+          fi
+
+          echo "Version: $VERSION"
+          echo "URL: $SDIST_URL"
+          echo "SHA256: $LOCAL_SHA256 (verified against PyPI)"
+
+      - name: Update formula in tap repo
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_REPO: ${{ vars.HOMEBREW_TAP_REPO || 'shawnpetros/homebrew-mediascribe' }}
+        if: env.HOMEBREW_TAP_TOKEN != ''
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          URL="${{ steps.meta.outputs.url }}"
+          SHA256="${{ steps.meta.outputs.sha256 }}"
+
+          # Clone the tap repo
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${TAP_REPO}.git" /tmp/tap
+          mkdir -p /tmp/tap/Formula
+
+          # Generate updated formula
+          cat > /tmp/tap/Formula/mediascribe.rb << EOF
+          class Mediascribe < Formula
+            include Language::Python::Virtualenv
+
+            desc "TUI-first tool for transcribing, translating, and analyzing audio/video media"
+            homepage "https://github.com/shawnpetros/mediascribe"
+            url "${URL}"
+            sha256 "${SHA256}"
+            license "MIT"
+            head "https://github.com/shawnpetros/mediascribe.git", branch: "main"
+
+            depends_on "python@3.12"
+            depends_on "ffmpeg"
+
+            def install
+              virtualenv_install_with_resources
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/mediascribe --version")
+            end
+          end
+          EOF
+
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' /tmp/tap/Formula/mediascribe.rb
+
+          # Commit and push
+          cd /tmp/tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/mediascribe.rb
+          git diff --cached --quiet && echo "No changes to formula" && exit 0
+          git commit -m "mediascribe ${VERSION}"
+          git push
+
+      - name: Skip notice
+        if: env.HOMEBREW_TAP_TOKEN == ''
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: echo "Skipping Homebrew update — HOMEBREW_TAP_TOKEN secret not configured"
