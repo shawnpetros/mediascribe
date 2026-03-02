@@ -114,13 +114,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$RELEASE_TAG" dist/* \
-            --title "mediascribe $RELEASE_TAG" \
-            --generate-notes
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists — uploading assets"
+            gh release upload "$RELEASE_TAG" dist/* --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/* \
+              --title "mediascribe $RELEASE_TAG" \
+              --generate-notes
+          fi
 
   # ── Update Homebrew tap formula ─────────────────────────
   update-homebrew:
-    needs: publish-pypi
+    needs: [build, publish-pypi]
     runs-on: ubuntu-latest
     # Only runs if HOMEBREW_TAP_TOKEN secret is configured
     if: vars.HOMEBREW_TAP_REPO != '' || true

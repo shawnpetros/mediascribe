@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mediascribe"
-version = "0.2.0"
+version = "0.9.0"
 description = "TUI-first tool for transcribing, translating, and analyzing audio/video media"
 readme = "README.md"
 license = {text = "MIT"}
