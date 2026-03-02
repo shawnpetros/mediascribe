@@ -411,5 +411,17 @@ def tui() -> None:
         console.print("  pip install mediascribe[tui]")
 
 
+@app.command()
+def mcp() -> None:
+    """Start the MCP server (stdio transport)."""
+    try:
+        from mediascribe.mcp import run_server
+
+        run_server()
+    except ImportError:
+        console.print("[red]MCP server requires the 'mcp' extra:[/red]")
+        console.print("  pip install mediascribe[mcp]")
+
+
 if __name__ == "__main__":
     app()
