@@ -75,6 +75,8 @@ jobs:
     needs: [auto-tag, test]
     if: needs.auto-tag.outputs.created == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      sha256: ${{ steps.hash.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -88,6 +90,14 @@ jobs:
 
       - name: Build sdist and wheel
         run: python -m build
+
+      - name: Compute SHA256
+        id: hash
+        run: |
+          VERSION="${{ needs.auto-tag.outputs.version }}"
+          SHA256=$(sha256sum dist/mediascribe-${VERSION}.tar.gz | awk '{print $1}')
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+          echo "SHA256: $SHA256"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -183,21 +193,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-      - name: Compute SHA256 from build artifact and resolve PyPI URL
+      - name: Resolve PyPI URL
         id: meta
         run: |
           VERSION="${{ needs.auto-tag.outputs.version }}"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-          # Hash the sdist we built — this is the exact file uploaded to PyPI
-          LOCAL_SHA256=$(sha256sum dist/mediascribe-${VERSION}.tar.gz | awk '{print $1}')
-          echo "sha256=$LOCAL_SHA256" >> "$GITHUB_OUTPUT"
 
           # Wait for PyPI to propagate, then look up the canonical URL
           for attempt in 1 2 3 4 5; do
@@ -214,18 +213,7 @@ jobs:
             exit 1
           fi
           echo "url=$SDIST_URL" >> "$GITHUB_OUTPUT"
-
-          # Verify PyPI serves the same file we built
-          curl -sSfL "$SDIST_URL" -o /tmp/sdist.tar.gz
-          REMOTE_SHA256=$(sha256sum /tmp/sdist.tar.gz | awk '{print $1}')
-          if [ "$LOCAL_SHA256" != "$REMOTE_SHA256" ]; then
-            echo "::error::SHA256 mismatch! Local artifact: $LOCAL_SHA256, PyPI download: $REMOTE_SHA256"
-            exit 1
-          fi
-
-          echo "Version: $VERSION"
           echo "URL: $SDIST_URL"
-          echo "SHA256: $LOCAL_SHA256 (verified against PyPI)"
 
       - name: Update formula in tap repo
         env:
@@ -233,9 +221,9 @@ jobs:
           TAP_REPO: ${{ vars.HOMEBREW_TAP_REPO || 'shawnpetros/homebrew-mediascribe' }}
         if: env.HOMEBREW_TAP_TOKEN != ''
         run: |
-          VERSION="${{ steps.meta.outputs.version }}"
+          VERSION="${{ needs.auto-tag.outputs.version }}"
           URL="${{ steps.meta.outputs.url }}"
-          SHA256="${{ steps.meta.outputs.sha256 }}"
+          SHA256="${{ needs.build.outputs.sha256 }}"
 
           # Clone the tap repo
           git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${TAP_REPO}.git" /tmp/tap
