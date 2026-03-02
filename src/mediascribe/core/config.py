@@ -14,7 +14,12 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+    TomlConfigSettingsSource,
+)
 
 TranscriptionMode = Literal["local", "api", "auto"]
 
@@ -74,6 +79,31 @@ class MediascribeSettings(BaseSettings):
 
     # ── Paths ────────────────────────────────────────────
     config_dir: Path = _default_config_dir()
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Add TOML config file as a settings source.
+
+        Priority (highest first):
+          1. init kwargs (CLI flags)
+          2. Environment variables (MEDIASCRIBE_*)
+          3. .env file
+          4. ~/.config/mediascribe/config.toml
+          5. Built-in defaults
+        """
+        toml_path = _default_config_dir() / "config.toml"
+        toml_source = TomlConfigSettingsSource(
+            settings_cls,
+            toml_file=toml_path if toml_path.exists() else None,
+        )
+        return init_settings, env_settings, dotenv_settings, toml_source, file_secret_settings
 
     def ensure_dirs(self) -> None:
         """Create config and output directories if they don't exist."""

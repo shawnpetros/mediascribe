@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mediascribe"
-version = "0.2.1"
+version = "0.9.0"
 description = "TUI-first tool for transcribing, translating, and analyzing audio/video media"
 readme = "README.md"
 license = {text = "MIT"}
@@ -50,7 +50,10 @@ tui = [
 diarize = [
     "pyannote-audio>=3.0",
 ]
-all = ["mediascribe[tui,diarize]"]
+mcp = [
+    "mcp>=1.0",
+]
+all = ["mediascribe[tui,diarize,mcp]"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
@@ -64,6 +67,7 @@ dev = [
 
 [project.scripts]
 mediascribe = "mediascribe.cli.app:main"
+mediascribe-mcp = "mediascribe.mcp:run_server"
 
 [project.urls]
 Repository = "https://github.com/shawnpetros/mediascribe"
@@ -108,6 +112,14 @@ module = [
     "mediascribe.tui.*",
 ]
 disallow_subclassing_any = false
+
+[[tool.mypy.overrides]]
+module = [
+    "mcp",
+    "mcp.*",
+]
+ignore_missing_imports = true
+follow_imports = "skip"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
