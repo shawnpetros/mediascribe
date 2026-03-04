@@ -138,7 +138,7 @@ jobs:
     needs: [build, publish-pypi]
     runs-on: ubuntu-latest
     # Only runs if HOMEBREW_TAP_TOKEN secret is configured
-    if: vars.HOMEBREW_TAP_REPO != ''
+    if: vars.HOMEBREW_TAP_REPO != '' || true
     steps:
       - uses: actions/checkout@v4
 
