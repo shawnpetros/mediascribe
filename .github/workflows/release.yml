@@ -230,32 +230,32 @@ jobs:
           mkdir -p /tmp/tap/Formula
 
           # Generate updated formula
-          cat > /tmp/tap/Formula/mediascribe.rb << EOF
-          class Mediascribe < Formula
-            include Language::Python::Virtualenv
+          cat > /tmp/tap/Formula/mediascribe.rb << FORMULA
+class Mediascribe < Formula
+  desc "TUI-first tool for transcribing, translating, and analyzing audio/video media"
+  homepage "https://github.com/shawnpetros/mediascribe"
+  url "${URL}"
+  sha256 "${SHA256}"
+  license "MIT"
+  head "https://github.com/shawnpetros/mediascribe.git", branch: "main"
 
-            desc "TUI-first tool for transcribing, translating, and analyzing audio/video media"
-            homepage "https://github.com/shawnpetros/mediascribe"
-            url "${URL}"
-            sha256 "${SHA256}"
-            license "MIT"
-            head "https://github.com/shawnpetros/mediascribe.git", branch: "main"
+  depends_on "ffmpeg"
+  depends_on "python@3.13"
 
-            depends_on "python@3.12"
-            depends_on "ffmpeg"
+  def install
+    python3 = "python3.13"
+    venv = libexec/"venv"
+    system python3, "-m", "venv", venv
+    system venv/"bin/pip", "install", "--upgrade", "pip"
+    system venv/"bin/pip", "install", cached_download
+    bin.install_symlink venv/"bin/mediascribe"
+  end
 
-            def install
-              virtualenv_install_with_resources
-            end
-
-            test do
-              assert_match version.to_s, shell_output("#{bin}/mediascribe --version")
-            end
-          end
-          EOF
-
-          # Remove leading whitespace from heredoc
-          sed -i 's/^          //' /tmp/tap/Formula/mediascribe.rb
+  test do
+    assert_match version.to_s, shell_output("#{bin}/mediascribe --version")
+  end
+end
+FORMULA
 
           # Commit and push
           cd /tmp/tap
