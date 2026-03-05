@@ -247,7 +247,7 @@ class Mediascribe < Formula
     venv = libexec/"venv"
     system python3, "-m", "venv", venv
     system venv/"bin/pip", "install", "--upgrade", "pip"
-    system venv/"bin/pip", "install", cached_download
+    system venv/"bin/pip", "install", "#{cached_download}[tui,mcp]"
     bin.install_symlink venv/"bin/mediascribe"
   end
 

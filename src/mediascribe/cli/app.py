@@ -408,7 +408,8 @@ def tui() -> None:
         run_tui()
     except ImportError:
         console.print("[red]TUI requires the 'tui' extra:[/red]")
-        console.print("  pip install mediascribe[tui]")
+        console.print("  mediascribe install tui")
+        console.print("  [dim]or: pip install mediascribe[tui][/dim]")
 
 
 @app.command()
@@ -420,7 +421,73 @@ def mcp() -> None:
         run_server()
     except ImportError:
         console.print("[red]MCP server requires the 'mcp' extra:[/red]")
-        console.print("  pip install mediascribe[mcp]")
+        console.print("  mediascribe install mcp")
+        console.print("  [dim]or: pip install mediascribe[mcp][/dim]")
+
+
+# ── install ─────────────────────────────────────────────────────────────────
+
+
+EXTRAS_INFO: dict[str, dict[str, str]] = {
+    "tui": {
+        "packages": "textual textual-fspicker",
+        "description": "Interactive TUI interface",
+    },
+    "diarize": {
+        "packages": "pyannote-audio",
+        "description": "Speaker diarization (requires PyTorch, ~500MB download)",
+    },
+    "mcp": {
+        "packages": "mcp",
+        "description": "MCP server for LLM agent integration",
+    },
+}
+
+
+@app.command()
+def install(
+    extra: Annotated[
+        str,
+        typer.Argument(help="Extra to install: tui, diarize, mcp, or all"),
+    ],
+) -> None:
+    """Install optional extras into the mediascribe environment."""
+    import subprocess
+
+    if extra == "all":
+        targets = list(EXTRAS_INFO.keys())
+    elif extra in EXTRAS_INFO:
+        targets = [extra]
+    else:
+        console.print(f"[red]Unknown extra:[/red] {extra}")
+        console.print(f"  Available: {', '.join(EXTRAS_INFO.keys())}, all")
+        raise typer.Exit(1)
+
+    # Find the pip that lives alongside this Python
+    pip_path = Path(sys.executable).parent / "pip"
+    pip_cmd = [sys.executable, "-m", "pip"] if not pip_path.exists() else [str(pip_path)]
+
+    for name in targets:
+        info = EXTRAS_INFO[name]
+        console.print(f"\n  [bold]Installing {name}:[/bold] {info['description']}")
+        if name == "diarize":
+            console.print(
+                "  [yellow]Note:[/yellow] This downloads PyTorch (~500MB). "
+                "It may take several minutes."
+            )
+        packages = info["packages"].split()
+        result = subprocess.run(
+            [*pip_cmd, "install", *packages],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            console.print(f"  [red]Failed to install {name}:[/red]")
+            console.print(f"    {result.stderr.strip().splitlines()[-1]}")
+            raise typer.Exit(1)
+        console.print(f"  [green]Installed {name}[/green]")
+
+    console.print()
 
 
 if __name__ == "__main__":

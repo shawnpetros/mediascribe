@@ -1,7 +1,7 @@
 """Diarize step — speaker attribution via pyannote.audio.
 
 Requires the optional ``diarize`` extra:
-    pip install mediascribe[diarize]
+    mediascribe install diarize
 
 Which installs pyannote.audio >= 3.0.  A HuggingFace token with accepted
 model license is needed (set via ``huggingface_token`` config or
@@ -63,7 +63,7 @@ class DiarizeStep(PipelineStep):
             from pyannote.audio import Pipeline as PyannotePipeline
         except ImportError:
             events.warn(
-                "pyannote.audio not installed — install with: pip install mediascribe[diarize]",
+                "pyannote.audio not installed — install with: mediascribe install diarize",
                 step=self.name,
             )
             return StepResult(data={"skipped": True, "reason": "pyannote not installed"})
