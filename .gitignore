@@ -36,3 +36,6 @@ htmlcov/
 _chunks/
 *.wav
 *.mp3
+
+# Manual e2e test fixtures (audio inputs + transcript outputs, ~75 MB)
+test_e2e/
